@@ -2,7 +2,7 @@
 
 Fork from Cooper OpenSource.
 
-来自Cooper进行二次开发和定制用于企业内部使用.
+基于Cooper进行二次开发和定制用于ali企业内部使用.
 
 
 ## ICON

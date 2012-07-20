@@ -13,7 +13,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cooper.Web", "src\Cooper.We
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{D84281D3-91DC-44BA-AD42-851DEFE42BF2}"
 	ProjectSection(SolutionItems) = preProject
-		scripts\cooper_sqlazure.sql = scripts\cooper_sqlazure.sql
 		license.txt = license.txt
 		nant.build = nant.build
 		README.md = README.md
