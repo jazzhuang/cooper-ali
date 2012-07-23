@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AccountConnections\ArkAccountConnection.cs" />
+    <Compile Include="AccountConnections\AliyunMailConnection.cs" />
     <Compile Include="AccountHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

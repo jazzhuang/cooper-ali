@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{8ED16542-D12C-49A0-B5D1-21B8E501CAE2}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>AliCooper.Sync</RootNamespace>
+    <AssemblyName>AliCooper.Sync</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="CodeSharp.Core">
+      <HintPath>..\..\packages\CodeSharp.Core.2.0\lib\net40\CodeSharp.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="CodeSharp.Core.Castles">
+      <HintPath>..\..\packages\CodeSharp.Core.Castles.2.0\lib\net40\CodeSharp.Core.Castles.dll</HintPath>
+    </Reference>
+    <Reference Include="log4net">
+      <HintPath>..\..\packages\log4net.2.0.0\lib\net40-full\log4net.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Exchange.WebServices">
+      <HintPath>..\..\lib\Microsoft.Exchange.WebServices 14.3\Microsoft.Exchange.WebServices.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=4.0.5.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Newtonsoft.Json.4.0.8\lib\net40\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.DirectoryServices" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AliYun\AliyunDao.cs" />
+    <Compile Include="AliYun\AliYunDTOs.cs" />
+    <Compile Include="AliYun\AliYunSyncSettings.cs" />
+    <Compile Include="AliYun\Calendar\AliyunCalendarEventSyncData.cs" />
+    <Compile Include="AliYun\Calendar\AliyunCalendarEventSyncDataService.cs" />
+    <Compile Include="AliYun\Calendar\AliyunCalendarEventSyncService.cs" />
+    <Compile Include="AliYun\Calendar\TaskSyncAliyunCalendarEventDataService.cs" />
+    <Compile Include="AliYun\IAliYunSyncService.cs" />
+    <Compile Include="ExchangeAddressListService.cs" />
+    <Compile Include="Exchange\Calendar\ExchangeCalendarEventSyncData.cs" />
+    <Compile Include="Exchange\Calendar\ExchangeCalendarEventSyncDataService.cs" />
+    <Compile Include="Exchange\Calendar\ExchangeCalendarEventSyncService.cs" />
+    <Compile Include="Exchange\Calendar\TaskSyncExchangeCalendarEventDataService.cs" />
+    <Compile Include="Exchange\Contact\ContactSyncExchangeTaskDataService.cs" />
+    <Compile Include="Exchange\Contact\ExchangeContactSyncData.cs" />
+    <Compile Include="Exchange\Contact\ExchangeContactSyncDataService.cs" />
+    <Compile Include="Exchange\Contact\ExchangeContactSyncService.cs" />
+    <Compile Include="Exchange\MicrosoftExchangeServiceProvider.cs" />
+    <Compile Include="Exchange\ExchangeSyncHelper.cs" />
+    <Compile Include="Exchange\ExchangeSyncSettings.cs" />
+    <Compile Include="Exchange\ExchangeUserCredential.cs" />
+    <Compile Include="Exchange\IExchangeSyncService.cs" />
+    <Compile Include="Exchange\Task\ExchangeTaskSyncData.cs" />
+    <Compile Include="Exchange\Task\ExchangeTaskSyncDataService.cs" />
+    <Compile Include="Exchange\Task\ExchangeTaskSyncService.cs" />
+    <Compile Include="Exchange\Task\TaskSyncExchangeTaskDataService.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Cooper.Sync\Cooper.Sync.csproj">
+      <Project>{F8990C39-342D-4FE2-B9A4-66383531D568}</Project>
+      <Name>Cooper.Sync</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

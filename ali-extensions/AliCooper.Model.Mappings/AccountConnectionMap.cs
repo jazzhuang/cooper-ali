@@ -16,4 +16,12 @@ namespace AliCooper.Model.Mappings
             DiscriminatorValue("ark");
         }
     }
+    public class AliyunMailConnectionMap : SubclassMap<AliyunMailConnection>
+    {
+        public AliyunMailConnectionMap()
+        {
+            Table("Cooper_AccountConnection");
+            DiscriminatorValue("aliyunMail");
+        }
+    }
 }
