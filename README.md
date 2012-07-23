@@ -7,11 +7,8 @@ Fork from Cooper OpenSource.
 
 ## ICON
 
-![cooper](http://www.icodesharp.com/cooper_logo1.png)
+![cooper](http://www.icodesharp.com/cooper.png)
 
-![cooper](http://www.icodesharp.com/cooper_logo2.png)
-
-![cooper](http://www.icodesharp.com/cooper_logo3.png)
 
 ======
 
@@ -23,6 +20,18 @@ build nuget
 build test_model Debug
 build web [Debug/Test/Release]
 ```
+
+## Style Reference
+
+- 字体 = 黑体
+- 蓝色主色调 = #2e9bd6
+- 灰色普通字 = #9a9a9a 
+- 灰色标题字 = #747474 加粗
+- 灰色背景色 = #ebebeb
+- 黑色文字 = #000
+- 蓝色文字 = #1c5daf 加粗
+- 图标风格 = 白色 + 投影1
+- ios topbar 中间白色字体间距放小 
 
 ## License
 
