@@ -90,5 +90,10 @@ debuger.isErrorEnable = debuger.enable && true;
           commandline="${msbuild.params} ${msbuild.params.output}\cooper_model_test"
           workingdir="${dir}\src\Cooper.Model.Test" />
     <exec program="${nunit}" commandline="Cooper.Model.Test.dll" workingdir="${build.absolutepath}\cooper_model_test"/>
+    <!--ali extensions test-->
+    <exec program="${msbuild}"
+          commandline="${msbuild.params} ${msbuild.params.output}\alicooper_model_test"
+          workingdir="${dir}\ali-extensions\AliCooper.Model.Test" />
+    <exec program="${nunit}" commandline="AliCooper.Model.Test.dll" workingdir="${build.absolutepath}\alicooper_model_test"/>
   </target>
 </project>
