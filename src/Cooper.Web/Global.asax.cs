@@ -11,6 +11,7 @@ using CodeSharp.Framework.Castles;
 using CodeSharp.Core.Castles;
 using CodeSharp.Core.Web;
 using System.Reflection;
+using CodeSharp.ServiceFramework.Castles;
 
 namespace Cooper.Web
 {
@@ -29,7 +30,10 @@ namespace Cooper.Web
             routes.MapRoute("Professional", "pro/{action}/{id}", new { controller = "Professional", action = "Index", id = UrlParameter.Optional });
             routes.MapRoute("Enterprise", "ent/{action}/{id}", new { controller = "Enterprise", action = "Index", id = UrlParameter.Optional });
 
-            routes.MapRoute("Account", "Account/{action}/{id}", new { controller = "Account", action = "Profile", id = UrlParameter.Optional });
+            routes.MapRoute("Account"
+                , "Account/{action}/{id}"
+                , new { controller = "Account", action = "Profile", id = UrlParameter.Optional }
+                , new string[] { "Cooper.Web.AliExtensions" });//使用ali扩展的account
             routes.MapRoute("Default", "{controller}/{action}/{id}", new { controller = "Home", action = "Index", id = UrlParameter.Optional });
         }
         protected void Application_Start()
@@ -50,26 +54,6 @@ namespace Cooper.Web
                 //.ReadProperties("CooperConfig")
                 .Resolve(this.Prepare);
         }
-        private void Prepare(WindsorResolver r)
-        {
-            var windsor = r.Container;
-            //Cooper模型相关
-            windsor.RegisterRepositories(Assembly.Load("Cooper.Repositories"));
-            windsor.RegisterServices(Assembly.Load("Cooper.Model"));
-            windsor.RegisterComponent(Assembly.Load("Cooper.Model"));
-            //ALiCooper扩展
-            windsor.RegisterRepositories(Assembly.Load("AliCooper.Repositories"));
-            windsor.RegisterServices(Assembly.Load("AliCooper.Model"));
-            windsor.RegisterComponent(Assembly.Load("AliCooper.Model"));
-            //Controller注入
-            windsor.ControllerFactory();
-            windsor.RegisterControllers(Assembly.GetExecutingAssembly());
-            //注册web上下文
-            windsor.RegisterComponent(typeof(Cooper.Web.Controllers.WebContextService));
-            //注册Fetch扩展
-            windsor.RegisterComponent(typeof(Cooper.Web.Controllers.FetchTasklistHelper));
-        }
-
         protected override bool IsKnownException(Exception e)
         {
             return base.IsKnownException(e) || e is CooperknownException;
@@ -94,6 +78,45 @@ namespace Cooper.Web
 </body>
 </html>", this.Lang().error_occur, this.Suffix(), (e as CooperknownException).Message));
             Response.Flush();
+        }
+        private void Prepare(WindsorResolver r)
+        {
+            var windsor = r.Container;
+            this.ParpareExtend(r);
+            //Cooper模型相关
+            windsor.RegisterRepositories(Assembly.Load("Cooper.Repositories"));
+            windsor.RegisterServices(Assembly.Load("Cooper.Model"));
+            windsor.RegisterComponent(Assembly.Load("Cooper.Model"));
+            //Controller注入
+            windsor.ControllerFactory();
+            windsor.RegisterControllers(Assembly.GetExecutingAssembly());
+            //注册web上下文
+            windsor.RegisterComponent(typeof(Cooper.Web.Controllers.WebContextService));
+            //注册Fetch扩展
+            windsor.RegisterComponent(typeof(Cooper.Web.Controllers.FetchTasklistHelper));
+        }
+        private void ParpareExtend(WindsorResolver r)
+        {
+            var windsor = r.Container;
+            //ALiCooper扩展
+            //目前以http获取配置服务替代原有机制
+            var api = CodeSharp.Framework.SystemConfig.Settings["ali_api_sysconfig"];
+            using (var wc = new System.Net.WebClient() { Encoding = System.Text.Encoding.UTF8 })
+                CodeSharp.Core.Configuration.Instance().ReadProperties(wc.DownloadString(api));
+            windsor.RegisterRepositories(Assembly.Load("AliCooper.Repositories"));
+            windsor.RegisterServices(Assembly.Load("AliCooper.Model"));
+            windsor.RegisterComponent(Assembly.Load("AliCooper.Model"));
+            windsor.RegisterComponent(typeof(Cooper.Web.AliExtensions.FetchTasklistHelper));
+            windsor.RegisterController<Cooper.Web.AliExtensions.AccountController>();
+            //连接到SC
+            //var uri = CodeSharp.Framework.SystemConfig.Settings["serviceCenterNodeUri"];
+            //CodeSharp.ServiceFramework.Configuration
+            //    .Configure()
+            //    .Castle(windsor)
+            //    .Associate(new Uri(uri))
+            //    .Log4Net(false)
+            //    .Endpoint()
+            //    .Run();
         }
     }
 

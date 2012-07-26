@@ -15,6 +15,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{D842
 	ProjectSection(SolutionItems) = preProject
 		license.txt = license.txt
 		nant.build = nant.build
+		nuget.install.bat = nuget.install.bat
 		README.md = README.md
 	EndProjectSection
 EndProject

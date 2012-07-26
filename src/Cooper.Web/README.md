@@ -1,5 +1,6 @@
 ﻿# Cooper.Web
 
+## Cooper-Ali Extensions
 
 ===
 
@@ -19,3 +20,7 @@
 ## Fetch Tasklist
 
 实时抓取用于展示的任务表，支持扩展任意来源，可与AccountConnection关联
+
+## AliExtensions
+
+- 该web项目中以ali开头的目录或文件均为ali基于cooper的扩展或调整

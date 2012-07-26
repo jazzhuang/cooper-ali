@@ -1,0 +1,53 @@
+﻿@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ark - 阿里内网登录 @this.Suffix()</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link type="text/css" rel="Stylesheet" href="@Url.Content("~/content/bootstrap/css/bootstrap.min.css")" />
+</head>
+<body class="b-login">
+    <div class="container alert" style="max-width: 500px; margin-top: 50px; background: #fff url(../content/ark/login-signin.png) 100% 0 no-repeat;">
+        <form method="post" style="margin-top: 20px">
+        <select id="cbDomain" name="cbDomain">
+            <option value="TAOBAO-HZ">TAOBAO-HZ</option>
+            <option value="HZ">HZ</option>
+            <option value="ALIPAY">ALIPAY</option>
+            <option value="SP">SP</option>
+        </select>
+        <label>
+        </label>
+        <input type="text" id="tbLoginName" name="tbLoginName" accesskey="s" autocomplete="on"
+            placeholder="帐号" autocorrect="off" autocapitalize="off" x-webkit-speech />
+        <label>
+        </label>
+        <input type="password" id="tbPassword" name="tbPassword" placeholder="密码" />
+        <label>
+        </label>
+        <button type="submit" id="bnLogin" class="btn btn-primary" onclick="return CheckInfo();">
+            登录</button>
+        <label>
+        </label>
+        </form>
+    </div>
+    @{ Html.RenderSettings(); }
+    <script type="text/javascript">
+        $(function () {
+            var error = '@ViewData["LoginError"]';
+            if (error) alert(error);
+        });
+        function CheckInfo() {
+            if ($('#tbLoginName').val() == '') {
+                alert('请输入用户名');
+                return false;
+            }
+            if ($('#tbPassword').val() == '') {
+                alert('请输入密码');
+                return false;
+            }
+        }
+    </script>
+</body>
+</html>

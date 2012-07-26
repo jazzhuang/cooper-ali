@@ -117,8 +117,20 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Web.Services" />
+    <Reference Include="Taobao.Application">
+      <HintPath>..\..\packages\Taobao.Model.1.0\lib\net35\Taobao.Application.dll</HintPath>
+    </Reference>
+    <Reference Include="Taobao.Model">
+      <HintPath>..\..\packages\Taobao.Model.1.0\lib\net35\Taobao.Model.dll</HintPath>
+    </Reference>
+    <Reference Include="Taobao.Workflow.Application">
+      <HintPath>..\..\packages\Taobao.Workflow.Client.1.0\lib\net35\Taobao.Workflow.Application.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AliExtensions\AccountController.cs" />
+    <Compile Include="AliExtensions\Ark.cs" />
+    <Compile Include="AliExtensions\FetchTasklistHelper.cs" />
     <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\BaseController.cs" />
     <Compile Include="Controllers\FetchTasklistHelper.cs" />
@@ -132,6 +144,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Content\ark\login-signin.png" />
+    <Content Include="Content\ark\login.css" />
     <Content Include="Content\bootstrap\css\bootstrap.css" />
     <Content Include="Content\bootstrap\css\bootstrap.min.css" />
     <Content Include="Content\bootstrap\img\glyphicons-halflings-white.png" />
@@ -327,8 +341,11 @@
   <ItemGroup>
     <None Include="README.md" />
     <Content Include="Views\Shared\ShareToRegion.cshtml" />
+    <Content Include="Views\Account\ArkLogin.cshtml" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Views\ali\" />
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
