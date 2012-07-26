@@ -1,4 +1,4 @@
-﻿//Copyright (c) CodeSharp.  All rights reserved. - http://www.codesharp.cn/
+﻿//Copyright (c) CodeSharp.  All rights reserved. - http://www.icodesharp.com/
 
 using System;
 using System.Collections.Generic;
@@ -24,39 +24,48 @@ namespace Cooper.Web.Controllers
 
         private ILog _log;
         private ITaskService _taskService;
+        private ITasklistService _tasklistService;
         private IAccountService _accountService;
         private IAccountConnectionService _accountConnectionService;
+        private FetchTasklistHelper _fetchTasklistHelper;
         public PersonalController(ILoggerFactory factory
             , ITaskService taskService
+            , ITasklistService tasklistService
             , IAccountService accountService
-            , IAccountConnectionService accountConnectionService)
+            , IAccountConnectionService accountConnectionService
+            , FetchTasklistHelper fetchTasklistHelper)
             : base(factory)
         {
             this._log = factory.Create(typeof(PersonalController));
             this._taskService = taskService;
+            this._tasklistService = tasklistService;
             this._accountService = accountService;
             this._accountConnectionService = accountConnectionService;
+            this._fetchTasklistHelper = fetchTasklistHelper;
         }
 
         public ActionResult Index(string desk)
         {
             //判断是否移动
-            if (string.IsNullOrWhiteSpace(desk) 
+            if (string.IsNullOrWhiteSpace(desk)
                 && Request.Browser.IsMobileDevice)
                 return RedirectToAction("Mobile");
-            ViewBag.Connections = this._accountConnectionService.GetConnections(this.Context.Current);
+
+            this.Prepare();
             return View();
         }
         public ActionResult Full()
         {
-            ViewBag.Connections = this._accountConnectionService.GetConnections(this.Context.Current);
+            this.Prepare();
             return View();
         }
         public ActionResult Mini()
         {
-            ViewBag.Connections = this._accountConnectionService.GetConnections(this.Context.Current);
+            this.Prepare();
             return View();
         }
+
+        #region Mobile处理
         public ActionResult Mobile()
         {
             ViewBag.Tasks = this._taskService.GetTasks(this.Context.Current);
@@ -109,52 +118,105 @@ namespace Cooper.Web.Controllers
                 this._taskService.Update(task);
             return Json(true);
         }
+        #endregion
 
+        #region 各类显示模式数据获取
         //优先级列表模式 个人任务的完整模式
         [HttpPost]
-        public ActionResult GetByPriority()
+        public ActionResult GetByPriority(string tasklistId)
         {
-            var account = this.Context.Current;
-            var tasks = this._taskService.GetTasks(account).ToArray();
-            return Json(new { List = this.ParseTasks(tasks), Sorts = this.ParseSortsByPriority(account, tasks) });
+            return this.GetBy(tasklistId
+                , this._taskService.GetTasks
+                , this._taskService.GetTasks
+                , this.ParseSortsByPriority
+                , this.ParseSortsByPriority);
         }
         //优先级列表模式 不含已经完成
         [HttpPost]
-        public ActionResult GetIncompletedByPriority()
+        public ActionResult GetIncompletedByPriority(string tasklistId)
         {
-            var account = this.Context.Current;
-            var tasks = this._taskService.GetIncompletedTasks(account).ToArray();
-            return Json(new { List = this.ParseTasks(tasks), Sorts = this.ParseSortsByPriority(account, tasks) });
+            return this.GetBy(tasklistId
+                , this._taskService.GetIncompletedTasks
+                , this._taskService.GetIncompletedTasks
+                , this.ParseSortsByPriority
+                , this.ParseSortsByPriority);
         }
         //DueTime列表模式
         [HttpPost]
-        public ActionResult GetByDueTime()
+        public ActionResult GetByDueTime(string tasklistId)
         {
-            var account = this.Context.Current;
-            var tasks = this._taskService.GetTasks(account).ToArray();
-            return Json(new { List = this.ParseTasks(tasks), Sorts = this.ParseSortsByDueTime(account, tasks) });
+            return this.GetBy(tasklistId
+                , this._taskService.GetTasks
+                , this._taskService.GetTasks
+                , this.ParseSortsByDueTime
+                , this.ParseSortsByDueTime);
         }
-        /// <summary>用于接收终端的变更同步数据
+        #endregion
+
+        #region Tasklist处理
+        //返回所有可用的tasklists id|name
+        public ActionResult GetTasklists()
+        {
+            var dict = this._fetchTasklistHelper.GetFetchTasklists(this.Context.Current);
+            this._tasklistService.GetTasklists(this.Context.Current).ToList()
+                .ForEach(o => dict.Add(o.ID.ToString(), o.Name));
+            return Json(dict);
+        }
+        /// <summary>创建任务表
         /// </summary>
+        /// <param name="name"></param>
+        /// <param name="type">任务表类型，如：personal，team，project...</param>
+        /// <returns></returns>
+        [HttpPost]
+        [ValidateInput(false)]
+        public ActionResult CreateTasklist(string name, string type)
+        {
+            //目前只提供个人任务表
+            var list = new PersonalTasklist(name, this.Context.Current);
+            this._tasklistService.Create(list);
+            return Json(list.ID);
+        }
+        /// <summary>删除任务表
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public ActionResult DeleteTasklist(string id)
+        {
+            var list = this.GetTasklist(id);
+            if (list != null)
+                this._tasklistService.Delete(list);
+            return Json(true);
+        }
+        #endregion
+
+        /// <summary>用于接收终端的变更同步数据，按tasklist为同步
+        /// </summary>
+        /// <param name="tasklistId">任务表标识，允许为空，客户端在同步数据前应先确保tasklist已经创建，通过CreateTasklist</param>
+        /// <param name="tasklistChanges">任务表变更数据</param>
         /// <param name="changes">变更数据 changelog[]</param>
         /// <param name="by">排序依据标识，参考静态变量PROFILE_SORT_PRIORITY、PROFILE_SORT_DUETIME等的值</param>
         /// <param name="sorts">排序数据 sort[]</param>
         /// <returns></returns>
         [HttpPost]
         [ValidateInput(false)]
-        public ActionResult Sync(string changes, string by, string sorts)
+        public ActionResult Sync(string tasklistId, string tasklistChanges, string changes, string by, string sorts)
         {
             //模拟同步间隙
             //System.Threading.Thread.Sleep(2000);
             //模拟连接失败
             //this.TryFail();
 
+            //HACK:Fetch模式不支持同步变更
+            Assert.IsFalse(this._fetchTasklistHelper.IsFetchTasklist(tasklistId));
+
             var account = this.Context.Current;
             var list = _serializer.JsonDeserialize<ChangeLog[]>(changes);
             var idChanges = new Dictionary<string, string>();//old,new
+            var tasklist = this.GetTasklist(tasklistId);
 
             //UNDONE:详细考虑潜在异常以及批量事务的意外问题是否会造成丢失变更
-            #region 执行对应变更
+            #region 对task执行对应变更
             foreach (var c in list)
             {
                 try
@@ -168,11 +230,14 @@ namespace Cooper.Web.Controllers
                         t = this._taskService.GetTask(long.Parse(idChanges[c.ID]));
                     else if (c.ID.StartsWith(TEMP))
                     {
-                        this._taskService.Create(t = new Task(account));
+                        t = new Task(account);
+                        if (tasklist != null) t.SetTasklist(tasklist);
+                        this._taskService.Create(t);
                         idChanges.Add(c.ID, t.ID.ToString());//添加到id变更
 
                         if (this._log.IsDebugEnabled)
-                            this._log.DebugFormat("从临时标识#{0}新建任务#{1}", c.ID, t.ID);
+                            this._log.DebugFormat("从临时标识#{0}新建任务#{1}{2}"
+                                , c.ID, t.ID, tasklist != null ? "并加入任务表#" + tasklist.ID : string.Empty);
                     }
                     else
                         t = this._taskService.GetTask(long.Parse(c.ID));
@@ -204,13 +269,25 @@ namespace Cooper.Web.Controllers
                         s.Indexs[i] = idChanges[s.Indexs[i]];
             try
             {
-                //更新排序信息至用户设置
+                
                 var d = _serializer.JsonSerialize(temp);
-                account.SetProfile(by, d);
-                this._accountService.Update(account);
+
+                if (tasklist == null)
+                {
+                    //更新排序信息至用户设置
+                    account.SetProfile(by, d);
+                    this._accountService.Update(account);
+                }
+                else
+                {
+                    //更新排序信息至对应的任务表
+                    tasklist[by] = d;
+                    this._tasklistService.Update(tasklist);
+                }
+
 
                 if (this._log.IsDebugEnabled)
-                    this._log.DebugFormat("修正后的排序数据为：{0}", d);
+                    this._log.DebugFormat("修正后的排序数据为：{0}|{1}", by, d);
             }
             catch (Exception e)
             {
@@ -220,6 +297,51 @@ namespace Cooper.Web.Controllers
 
             //返回修正列表
             return Json(idChanges.Select(o => new Correction() { OldId = o.Key, NewId = o.Value }));
+        }
+
+        private ActionResult GetBy(string tasklistId
+            , Func<Account, IEnumerable<Task>> func1
+            , Func<Account, Tasklist, IEnumerable<Task>> func2
+            , Func<Account, TaskInfo[], Sort[]> func3
+            , Func<Account, Tasklist, TaskInfo[], Sort[]> func4)
+        {
+            var list = this.GetTasklist(tasklistId);
+            var account = this.Context.Current;
+
+            TaskInfo[] tasks = null;
+
+            var editable = list != null
+                || (tasks = this._fetchTasklistHelper.FetchTasks(account, tasklistId)) == null;
+
+            tasks = list == null
+                ? (tasks ?? this.ParseTasks(func1(account).ToArray()))
+                : this.ParseTasks(func2(account, list).ToArray());
+
+            return Json(new
+            {
+                Editable = editable,
+                List = tasks,
+                Sorts = list == null
+                    ? func3(account, tasks)
+                    : func4(account, list, tasks),
+            });
+        }
+        private Tasklist GetTasklist(string tasklistId)
+        {
+            int listId;
+            var list = int.TryParse(tasklistId, out listId) ? this._tasklistService.GetTasklist(listId) : null;
+            //HACK:个人任务列表只有拥有者能查看
+            if (list != null && list is PersonalTasklist)
+                Assert.AreEqual(this.Context.Current.ID, (list as PersonalTasklist).OwnerAccountId);
+            //UNDONE:根据不同类型的任务表验证权限
+            return list;
+        }
+        private void Prepare()
+        {
+            var a = this.Context.Current;
+            ViewBag.Connections = this._accountConnectionService.GetConnections(a);
+            ViewBag.Tasklists = this._tasklistService.GetTasklists(a);
+            ViewBag.FetchTasklists = this._fetchTasklistHelper.GetFetchTasklists(a);
         }
 
         private TaskInfo[] ParseTasks(params Task[] tasks)
@@ -234,44 +356,62 @@ namespace Cooper.Web.Controllers
                 IsCompleted = o.IsCompleted
             }).ToArray();
         }
-        private Sort[] ParseSortsByPriority(Account account, params Task[] tasks)
+        private Sort[] ParseSortsByPriority(Account account, params TaskInfo[] tasks)
+        {
+            return this.ParseSortsByPriority(account
+                , this.GetSorts(account, PROFILE_SORT_PRIORITY)
+                , tasks);
+        }
+        private Sort[] ParseSortsByPriority(Account account, Tasklist tasklist, params TaskInfo[] tasks)
+        {
+            return this.ParseSortsByPriority(account
+                , this.GetSorts(tasklist, PROFILE_SORT_PRIORITY)
+                , tasks);
+        }
+        private Sort[] ParseSortsByPriority(Account account, Sort[] sorts, params TaskInfo[] tasks)
         {
             Sort today, upcoming, later;
-            var arr = this.GetSorts(account, PROFILE_SORT_PRIORITY);
-            today = arr.FirstOrDefault(o => o.Key == "0") ?? new Sort() { By = "priority", Key = "0" };
-            today.Name = "今天";
-            upcoming = arr.FirstOrDefault(o => o.Key == "1") ?? new Sort() { By = "priority", Key = "1" };
-            upcoming.Name = "稍后完成";
-            later = arr.FirstOrDefault(o => o.Key == "2") ?? new Sort() { By = "priority", Key = "2" };
-            later.Name = "迟些再说";
+            today = sorts.FirstOrDefault(o => o.Key == "0") ?? new Sort() { By = "priority", Key = "0" };
+            today.Name = this.Lang().priority_today;
+            upcoming = sorts.FirstOrDefault(o => o.Key == "1") ?? new Sort() { By = "priority", Key = "1" };
+            upcoming.Name = this.Lang().priority_upcoming;
+            later = sorts.FirstOrDefault(o => o.Key == "2") ?? new Sort() { By = "priority", Key = "2" };
+            later.Name = this.Lang().priority_later;
             //修正索引
-            this.RepairIndexs(today, this.Parse(tasks, o => o.Priority == Priority.Today));
-            this.RepairIndexs(upcoming, this.Parse(tasks, o => o.Priority == Priority.Upcoming));
-            this.RepairIndexs(later, this.Parse(tasks, o => o.Priority == Priority.Later));
+            this.RepairIndexs(today, this.Parse(tasks, o => o.Priority == (int)Priority.Today));
+            this.RepairIndexs(upcoming, this.Parse(tasks, o => o.Priority == (int)Priority.Upcoming));
+            this.RepairIndexs(later, this.Parse(tasks, o => o.Priority == (int)Priority.Later));
 
             return new Sort[] { today, upcoming, later };
         }
-        private Sort[] ParseSortsByDueTime(Account account, params Task[] tasks)
+        private Sort[] ParseSortsByDueTime(Account account, params TaskInfo[] tasks)
+        {
+            return this.ParseSortsByDueTime(account, this.GetSorts(account, PROFILE_SORT_DUETIME), tasks);
+        }
+        private Sort[] ParseSortsByDueTime(Account account, Tasklist tasklist, params TaskInfo[] tasks)
+        {
+            return this.ParseSortsByDueTime(account, this.GetSorts(tasklist, PROFILE_SORT_DUETIME), tasks);
+        }
+        private Sort[] ParseSortsByDueTime(Account account, Sort[] sorts, params TaskInfo[] tasks)
         {
             Sort due, today, upcoming, later;
-            var arr = this.GetSorts(account, PROFILE_SORT_DUETIME);
-            due = arr.FirstOrDefault(o => o.Key == "dueTime") ?? new Sort() { By = "", Key = "dueTime" };
-            due.Name = "按截止日期排序";
-            today = arr.FirstOrDefault(o => o.Key == "0") ?? new Sort() { By = "priority", Key = "0" };
-            today.Name = "今天";
-            upcoming = arr.FirstOrDefault(o => o.Key == "1") ?? new Sort() { By = "priority", Key = "1" };
-            upcoming.Name = "稍后完成";
-            later = arr.FirstOrDefault(o => o.Key == "2") ?? new Sort() { By = "priority", Key = "2" };
-            later.Name = "迟些再说";
+            due = sorts.FirstOrDefault(o => o.Key == "dueTime") ?? new Sort() { By = "", Key = "dueTime" };
+            due.Name = this.Lang().sort_by_duetime;
+            today = sorts.FirstOrDefault(o => o.Key == "0") ?? new Sort() { By = "priority", Key = "0" };
+            today.Name = this.Lang().priority_today;
+            upcoming = sorts.FirstOrDefault(o => o.Key == "1") ?? new Sort() { By = "priority", Key = "1" };
+            upcoming.Name = this.Lang().priority_upcoming;
+            later = sorts.FirstOrDefault(o => o.Key == "2") ?? new Sort() { By = "priority", Key = "2" };
+            later.Name = this.Lang().priority_later;
             //修正索引
-            this.RepairIndexs(due, this.Parse(tasks, o => o.DueTime.HasValue));
-            this.RepairIndexs(today, this.Parse(tasks, o => !o.DueTime.HasValue && o.Priority == Priority.Today));
-            this.RepairIndexs(upcoming, this.Parse(tasks, o => !o.DueTime.HasValue && o.Priority == Priority.Upcoming));
-            this.RepairIndexs(later, this.Parse(tasks, o => !o.DueTime.HasValue && o.Priority == Priority.Later));
+            this.RepairIndexs(due, this.Parse(tasks, o => !string.IsNullOrEmpty(o.DueTime)));
+            this.RepairIndexs(today, this.Parse(tasks, o => string.IsNullOrEmpty(o.DueTime) && o.Priority == (int)Priority.Today));
+            this.RepairIndexs(upcoming, this.Parse(tasks, o => string.IsNullOrEmpty(o.DueTime) && o.Priority == (int)Priority.Upcoming));
+            this.RepairIndexs(later, this.Parse(tasks, o => string.IsNullOrEmpty(o.DueTime) && o.Priority == (int)Priority.Later));
 
             return new Sort[] { due, today, upcoming, later };
         }
-        private void RepairIndexs(Sort sort, IDictionary<string, Task> tasks)
+        private void RepairIndexs(Sort sort, IDictionary<string, TaskInfo> tasks)
         {
             var temp = (sort.Indexs ?? new string[0]).ToList();
             if (this._log.IsDebugEnabled)
@@ -281,14 +421,14 @@ namespace Cooper.Web.Controllers
             if (this._log.IsDebugEnabled)
                 this._log.DebugFormat("过滤后排序为{0}", string.Join(",", temp));
             //合并未在索引中出现的项
-            sort.Indexs = temp.Union(tasks.Select(o => o.Value.ID.ToString())).ToArray();
+            sort.Indexs = temp.Union(tasks.Select(o => o.Value.ID)).ToArray();
             if (this._log.IsDebugEnabled)
                 this._log.DebugFormat("合并后排序为{0}", string.Join(",", sort.Indexs));
         }
-        private IDictionary<string, Task> Parse(Task[] tasks, Func<Task, bool> filter)
+        private IDictionary<string, TaskInfo> Parse(TaskInfo[] tasks, Func<TaskInfo, bool> filter)
         {
             return tasks.Where(filter)
-                .Select(o => new KeyValuePair<string, Task>(o.ID.ToString(), o))
+                .Select(o => new KeyValuePair<string, TaskInfo>(o.ID, o))
                 .ToDictionary(o => o.Key, o => o.Value);
         }
         private Sort[] GetSorts(Account a, string key)
@@ -297,7 +437,12 @@ namespace Cooper.Web.Controllers
                 ? _serializer.JsonDeserialize<Sort[]>(a.GetProfile(key))
                 : _empty;
         }
-
+        private Sort[] GetSorts(Tasklist a, string key)
+        {
+            return !string.IsNullOrWhiteSpace(a[key])
+                ? _serializer.JsonDeserialize<Sort[]>(a[key])
+                : _empty;
+        }
         private void ApplyUpdate(Task t, ChangeLog c)
         {
             if (c.Name.Equals("subject", StringComparison.InvariantCultureIgnoreCase))
@@ -350,6 +495,14 @@ namespace Cooper.Web.Controllers
         /// <summary>是否完成
         /// </summary>
         public bool IsCompleted { get; set; }
+
+        //额外属性
+
+        /// <summary>是否可编辑
+        /// </summary>
+        public bool Editable { get; set; }
+
+        public TaskInfo() { this.Editable = true; }
     }
     /// <summary>描述数据变更记录
     /// </summary>

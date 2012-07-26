@@ -18,6 +18,8 @@
     var url_task_byDueTime = '@Url.Action("GetByDueTime", "Personal", null)';
     var url_task_sync = '@Url.Action("Sync", "Personal", null)';
     var url_task_mini = '@Url.Action("Mini", "Personal", null)';
+    var url_tasklist_create = '@Url.Action("CreateTasklist", "Personal", null)';
+    var url_tasklist_delete = '@Url.Action("DeleteTasklist", "Personal", null)';
 </script>
 <div class="modal hide" id="mobi_app">
     <div class="modal-header">
@@ -30,9 +32,11 @@
         iphone
         <img src="@Url.Content("~/content/images/qr_iphone.png")" width="100px" />
         ipad
-        <img src="@Url.Content("~/content/images/qr_ipad.png")" width="100px" />
+        <img src="@Url.Content("~/content/images/qr_iphone.png")" width="100px" />
+        android
+        <img src="@Url.Content("~/content/images/qr_iphone.png")" width="100px" />
         <br />
-        @this.Lang().download_address：<input type="text" value="https://www.incooper.net/" />
+        @this.Lang().download_address：<input type="text" value="http://xyj.im" />
     </div>
     <div class="modal-footer">
     </div>

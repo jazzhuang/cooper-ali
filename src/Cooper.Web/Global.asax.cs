@@ -1,4 +1,4 @@
-﻿//Copyright (c) CodeSharp.  All rights reserved. - http://www.codesharp.cn/
+﻿//Copyright (c) CodeSharp.  All rights reserved. - http://www.icodesharp.com/
 
 using System;
 using System.Collections.Generic;
@@ -66,6 +66,8 @@ namespace Cooper.Web
             windsor.RegisterControllers(Assembly.GetExecutingAssembly());
             //注册web上下文
             windsor.RegisterComponent(typeof(Cooper.Web.Controllers.WebContextService));
+            //注册Fetch扩展
+            windsor.RegisterComponent(typeof(Cooper.Web.Controllers.FetchTasklistHelper));
         }
 
         protected override bool IsKnownException(Exception e)
@@ -76,12 +78,22 @@ namespace Cooper.Web
         {
             if (!(e is CooperknownException))
                 base.OnError(e);
-           
+
             Server.ClearError();
             //TODO:切换为使用razor engine
-            Response.Write((e as CooperknownException).Message);
+            Response.Write(string.Format(@"
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{0} {1}</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <link type='text/css' rel='Stylesheet' href='/content/bootstrap/css/bootstrap.css' />
+</head>
+<body>
+    <div class='container alert alert-danger' style='margin-top:50px'>{2}</div>
+</body>
+</html>", this.Lang().error_occur, this.Suffix(), (e as CooperknownException).Message));
             Response.Flush();
-
         }
     }
 
@@ -149,17 +161,27 @@ public static class WebExtensions
     {
         return CodeSharp.Framework.SystemConfig.Settings.VersionFlag.ToLower();
     }
-
-
-    /// <summary>获取文案
+    /// <summary>返回缩略字符串
     /// </summary>
-    /// <param name="obj"></param>
-    /// <param name="key"></param>
+    /// <param name="input"></param>
+    /// <param name="l"></param>
     /// <returns></returns>
-    public static string Text(this object obj, string key)
+    public static string ShortString(this string input, int l)
     {
-        return CodeSharp.Framework.SystemConfig.Settings[key];
+        return input.ShortString(l, "...");
     }
+    /// <summary>返回缩略字符串
+    /// </summary>
+    /// <param name="input"></param>
+    /// <param name="l"></param>
+    /// <param name="end"></param>
+    /// <returns></returns>
+    public static string ShortString(this string input, int l, string end)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return input;
+        return input.Length <= l ? input : input.Substring(0, l) + end;
+    }
+
     public static dynamic _lang;
     /// <summary>获取文案/语言
     /// </summary>
@@ -188,5 +210,18 @@ public static class WebExtensions
             result = CodeSharp.Framework.SystemConfig.Settings["zhcn_" + binder.Name] ?? binder.Name;
             return true;
         }
+    }
+}
+//扩展断言
+internal class Assert : NUnit.Framework.Assert
+{
+    /// <summary>断言是否空白字符串
+    /// </summary>
+    /// <param name="input"></param>
+    public static void IsNotNullOrWhiteSpace(string input)
+    {
+        Assert.IsNotNullOrEmpty(input);
+        Assert.IsNotNullOrEmpty(input.Trim());
+        //Assert.IsFalse(string.IsNullOrWhiteSpace(input));
     }
 }

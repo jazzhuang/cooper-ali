@@ -1,5 +1,7 @@
 ﻿@{
     var mini = Convert.ToBoolean(Model);
+    var tasklists = ViewBag.Tasklists as IEnumerable<Cooper.Model.Tasks.PersonalTasklist>;
+    var fetchs = ViewBag.FetchTasklists as IDictionary<string, string>;
 }
 <!--撤销删除区域-->
 <div id="cancel_delete" class="alert alert-danger">
@@ -9,17 +11,39 @@
 </div>
 <div style="padding: 10px 5px 0;">
     <ul class="nav nav-tabs">
-        <li class="active"><a>@this.Lang().personal_task_management </a></li>
-        <li class="dropdown pull-right"><a class="dropdown-toggle" data-toggle="dropdown">@this.Lang().more
+        <li class="dropdown active"><a class="dropdown-toggle" data-toggle="dropdown" title="@this.Lang().tasklist">
+            <span id="tasklist_title"></span><b class="caret"></b></a>
+            <ul id="tasklists" class="dropdown-menu">
+                <li><a onclick="openTasklists()"><i class="icon-edit"></i><span>@this.Lang().new_tasklist</span>
+                    <span class="label label-important">New</span></a></li>
+                <!--default-->
+                <li><a class="changelist" id=""><i class="icon-inbox"></i><span>@this.Lang().personal_task_management</span></a></li>
+                <!--fetch tasklists-->
+                @foreach (var f in fetchs)
+                {
+                    <li><a class="changelist" id="@f.Key"><i class="icon-list-alt"></i><span>@f.Value</span></a></li>
+                }
+                <!--personal tasklists-->
+                @foreach (var l in tasklists)
+                {
+                    <li><a class="changelist" id="@l.ID"><i class="icon-list"></i><span>@l.Name</span> </a>
+                    </li>
+                }
+            </ul>
+        </li>
+        <li class="dropdown pull-right"><a class="dropdown-toggle" data-toggle="dropdown">@this.Lang().more <span class="label label-warning">New!</span>
             <b class="caret"></b></a>
             <ul class="dropdown-menu">
-                <li><a onclick="syncAccount()"><i class="icon-refresh"></i>@this.Lang().sync_to</a></li>
+                <li id="tasklist_delete"><a onclick="doRemoveTasklist()"><i class="icon-trash"></i>@this.Lang().delete_tasklist</a></li>
+                @*<li><a onclick="syncAccount()"><i class="icon-refresh"></i>@this.Lang().sync_to</a></li>*@
+                <li><a href="@Url.Action("", "Account", null)"><i class="icon-user"></i>@this.Lang().my_profile</a>
+                </li>
+                <li><a onclick="window.print()"><i class="icon-print"></i>@this.Lang().print</a></li>
+                <li><a href="@Request.Url" target="_blank"><i class="icon-share-alt"></i>@this.Lang().open_in_new_window</a></li>
+                <li><a onclick="$('#mobi_app').modal('show')"><i class="icon-download"></i> @this.Lang().download_mobi <span class="label label-important">HOT!</span></a></li>
+            </ul>
         </li>
-        <li><a href="@Url.Action("", "Account", null)"><i class="icon-user"></i>@this.Lang().my_profile</a>
-        </li>
-        <li><a><i class="icon-print"></i>@this.Lang().print</a></li>
     </ul>
-    </li> </ul>
     <div class="btn-toolbar">
         <div class="btn-group pull-left" data-toggle="buttons-radio">
             <button class="btn active" title="@this.Lang().by_priority_title" onclick="byPriority()">
@@ -32,7 +56,7 @@
         </div>
         @if (!mini)
         {
-            <div class="btn-group pull-right" data-toggle="buttons-radio">
+            <div class="btn-group pull-right flag_editable flag_by flag_by_priority" data-toggle="buttons-radio">
                 <a class="btn dropdown-toggle" data-toggle="dropdown"><i class="icon-briefcase"></i>
                     @this.Lang().archive <span class="caret"></span></a>
                 <ul class="dropdown-menu">
@@ -42,7 +66,7 @@
                 </ul>
             </div>
         }
-        <div class="btn-group pull-right">
+        <div class="btn-group pull-right flag_editable">
             @if (!mini)
             {
                 <button class="btn" onclick="toggleTasks()">
@@ -60,6 +84,7 @@
 </div>
 <div id="todolist_wrapper" class="todolist_wrapper">
 </div>
+<!--快捷键说明-->
 <div style="border-top: 1px #ccc solid; padding: 10px;">
     <span class="label label-info">↵ @this.Lang().addNew</span> <span class="label label-success">
         Ctrl+↵
@@ -67,6 +92,7 @@
     <span class="label label-inverse">Ctrl/Shift+@this.Lang().mouse @this.Lang().select_inverse</span>
     <span class="label label-warning">Backspace @this.Lang().delete</span>
 </div>
+<!--异常显示-->
 <div id="error_lose_connect" class="alert alert-error hide">
     <strong>Oops !</strong><br />
     @this.Lang().lose_conn<br />

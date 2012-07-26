@@ -6,11 +6,11 @@
             <thead>
                 <tr class="row_header">
                     <td class="cell_icon">
-                        <i class="icon-inbox"></i>
+                        @*<i class="icon-inbox"></i>*@
                     </td>
                     <td colspan="2" style="padding-left: 10px">
-                        <span class="pull-left">{name}</span> <span class="badge pull-right" style="margin-top: 5px;
-                            cursor: pointer" onclick="$(this).parents('thead').next().toggle()">0</span>
+                        <span class="pull-left">{name}</span> 
+                        <span class="badge pull-right" style="margin-top: 5px;cursor: pointer" onclick="$(this).parents('thead').next().toggle()">0</span>
                     </td>
                 </tr>
             </thead>
@@ -78,7 +78,7 @@
                     <a class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span>
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a><i class="icon-share-alt"></i>@this.Lang().share_to</a></li>
+                        <li><a onclick="share(this)"><i class="icon-share"></i>@this.Lang().share_to</a></li>
                     </ul>
                 </div>
                 <div style="clear: both; height: 5px">
@@ -110,7 +110,7 @@
                                     <i class="icon-tag" priority="1"></i>
                                 </button>
                                 <button class="btn" title="" priority="2">
-                                    <i class="icon-inbox" priority="2"></i>
+                                    <i class="icon-pause" priority="2"></i>
                                 </button>
                             </div>
                         </td>
