@@ -20,12 +20,12 @@ namespace Cooper.Web.Controllers
     public class AccountController : Controller
     {
         protected Serializer _serializer = new Serializer();
-        private ILog _log;
-        private IContextService _context;
-        private IAccountHelper _accountHelper;
-        private IAccountService _accountService;
-        private IAccountConnectionService _accountConnectionService;
-        private string _sysConfig_versionFlag;
+        protected ILog _log;
+        protected IContextService _context;
+        protected IAccountHelper _accountHelper;
+        protected IAccountService _accountService;
+        protected IAccountConnectionService _accountConnectionService;
+        protected string _sysConfig_versionFlag;
 
         private string _googleOAuth2Url;
         private string _googleOAuth2TokenUrl;

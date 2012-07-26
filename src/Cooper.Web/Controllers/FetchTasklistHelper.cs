@@ -21,15 +21,14 @@ namespace Cooper.Web.Controllers
         TaskInfo[] FetchTasks(Account account, string tasklistId);
         IDictionary<string, string> GetFetchTasklists(Account account);
     }
-
     /// <summary>Fetch默认实现
     /// </summary>
     [CodeSharp.Core.Component]
-    public class FetchTasklistHelper:IFetchTasklistHelper
+    public class FetchTasklistHelper : IFetchTasklistHelper
     {
         protected static readonly Serializer _serializer = new Serializer();
         protected IAccountConnectionService _connectionService;
-        private string _git_api_issues;
+        protected string _git_api_issues;
         public FetchTasklistHelper(IAccountConnectionService connectionService, string git_api_issues)
         {
             this._connectionService = connectionService;
