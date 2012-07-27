@@ -342,6 +342,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Views\ali\" />
+    <Content Include="Views\Home\Issues.cshtml" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" />
