@@ -269,19 +269,26 @@ UI_List_Common.prototype = {
             //删除backspace 
             if (backspace) {
                 var txt = base.getTaskVal($focus);
-                if ($actives.length <= 1 && txt != '')
-                    return;
                 var $p, $n;
                 var ary;
-                if ($actives.length > 1) {
+                var b = false;
+                if ($actives.length > 1) { //多行删除
                     $p = base._findActivePrev();
                     $n = base._findActiveNext();
-                } else if (txt == '') {
+                } else if (txt == '') {//焦点行删除
                     var ary = base._findNextAndPrev($focus);
                     $p = ary[0];
                     $n = ary[1];
+                } else if ($actives.length == 1 && txt != '') {//带内容的焦点行删除
+                    var $p = base._findNextAndPrev($focus)[0];
+                    if ($p == null) return;
+                    if ($focus.find('input')[0].selectionStart > 0) return;
+                    var prev = base.getTask($p);
+                    //合并到上一行
+                    prev.setSubject(prev.subject() + txt, true);
+                    b = true;//合并操作不需要出现撤销删除
                 }
-                base.deleteTask();
+                base.deleteTask(b);
                 if ($p != null)
                     base._fireRowClick($p);
                 else if ($n != null)
@@ -537,6 +544,20 @@ UI_List_Common.prototype = {
         $el.find('input').attr('readonly', !this.modeArgs.editable);
         $el.find('textarea').attr('readonly', !this.modeArgs.editable);
     },
+    _appendTaskToRow: function ($row, t, a) {
+        var active = a == undefined ? cached_tasks[this.getTaskId($row)] : a;
+        var $input = $row.find('input');
+        t.el()[$input[0].selectionStart == 0 && $input.val() != '' ? 'insertBefore' : 'insertAfter']($row);
+        if ($input[0].selectionStart > 0) {
+            //若出现截断则拆分任务
+            var prevVal = $input.val().substring(0, $input[0].selectionStart);
+            var nextVal = $input.val().substring($input[0].selectionStart);
+            debuger.debug('prevVal=' + prevVal);
+            debuger.debug('nextVal=' + nextVal);
+            active.setSubject(prevVal, true);
+            t.setSubject(nextVal, true);
+        }
+    },
     ////////////////////////////////////////////////////////////////////////////////////////
     //行为和主要差异部分 不做实现
     //判断区域合法性
@@ -551,7 +572,7 @@ UI_List_Common.prototype = {
     ////////////////////////////////////////////////////////////////////////////////////////
     //行为和主要差异部分 部分实现
     //删除
-    deleteTask: function () {
+    deleteTask: function (b) {
         var $actives = this.getActives();
         var l = $actives.length;
         if (l == 0)
@@ -571,6 +592,10 @@ UI_List_Common.prototype = {
             active.el().remove();
         });
 
+        if (b) {
+            this.continueDelete();
+            return;
+        }
         //给予一定时间的撤销机会 
         //注意：由于定时原因，会导致重新加载操作时删除记录未被提交
         var i = 15;

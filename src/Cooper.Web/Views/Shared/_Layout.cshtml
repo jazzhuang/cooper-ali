@@ -9,6 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link type="text/css" rel="Stylesheet" href="@Url.Content("~/content/bootstrap/css/bootstrap.min.css")" />
     <link type="text/css" rel="Stylesheet" href="@Url.Content("~/content/jquery/css/smoothness/jquery-ui-1.8.21.custom.css")" />
+    <link type="text/css" rel="Stylesheet" href="@Url.Content("~/content/css/base.css")" />
     <link type="text/css" rel="Stylesheet" href="@Url.Content("~/content/css/task.css")" />
 </head>
 <body>
@@ -203,7 +204,7 @@
             ui_list_helper_due = create_UI_List_Due();
 
             refreshTasklists();
-            list('');
+            list(0);
 
             $('.btn_sync').click(function () {
                 var $e = $(this);
@@ -260,9 +261,9 @@
             });
         }
         function list(id) {
-            $('#tasklist_title').html($('#tasklists a.changelist[id=' + id + ']').find('span').html());
+            $('#tasklist_title').html($('#tasklists a.changelist[id="' + id + '"]').find('span').html());
             currentMode(function () {
-                currentList = id;
+                currentList = id == 0 ? '' : id;
                 var temp = parseInt(id);
                 $('#tasklist_delete')[isNaN(temp) ? 'hide' : 'show']();
             }, function () {
@@ -278,7 +279,7 @@
             refreshTasklists();
         }
         function removeTasklist(i) {
-            $('#tasklists li[id=' + i + ']').remove();
+            $('#tasklists a[id="' + i + '"]').parent().remove();
         }
         function openTasklists() {
             $('#tasklistModal').modal('show');
@@ -303,7 +304,7 @@
             $.post(url_tasklist_delete, { id: currentList }, function () {
                 debuger.info('remove tasklist#' + currentList);
                 removeTasklist(currentList);
-                list('');
+                list(0);
             });
         }
         ////////////////////////////////////////////////////////////////////////////////////////
