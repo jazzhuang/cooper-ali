@@ -18,12 +18,11 @@ namespace Cooper.Web.AliExtensions
     /// </summary>
     public class AccountController : Cooper.Web.Controllers.AccountController
     {
+        private static CodeSharp.ServiceFramework.DefaultJSONSerializer _jsonHelper = new CodeSharp.ServiceFramework.DefaultJSONSerializer();
         private string _arkOAuth2Url;
         private string _arkOAuth2UserUrl;
         private bool _arkOAuth2Enable;
-
-        //临时为aita接入提供，arkweb上线后取消此实现
-        public Taobao.Facades.IUserService TaobaoUserService { get; set; }
+        private string _api_user_workid;
 
         public AccountController(ILoggerFactory factory
             , IContextService context
@@ -48,7 +47,9 @@ namespace Cooper.Web.AliExtensions
 
             , string arkOAuth2Url
             , string arkOAuth2UserUrl
-            , string arkOAuth2Enable)
+            , string arkOAuth2Enable
+
+            , string ali_api_user_workid)
             : base(factory
             , context
             , accountHelper
@@ -74,6 +75,7 @@ namespace Cooper.Web.AliExtensions
             this._arkOAuth2UserUrl = arkOAuth2UserUrl;
             this._arkOAuth2Enable = Convert.ToBoolean(arkOAuth2Enable);
 
+            this._api_user_workid = ali_api_user_workid;
         }
 
         //aita应用接入
@@ -89,14 +91,12 @@ namespace Cooper.Web.AliExtensions
             if (string.Compare(source, code, StringComparison.CurrentCultureIgnoreCase) != 0)
                 throw new CooperknownException("您没有通过Aita验证，无法访问该页面");
 
-            if (this.TaobaoUserService == null)
-                throw new CooperknownException("抱歉，发生错误，请稍后再试");
-            var user = this.TaobaoUserService.GetUserByWorkId(workId);
+            var user = this.GetUser(workId);
             if (user == null)
                 throw new CooperknownException("不存在的工号");
             //这个方式无法获取token
             this.SetLogin<ArkConnection>(user.UserName, user.UserName);
-            return RedirectToAction("Full", "Per");
+            return RedirectToAction("Mini", "Per");
         }
 
         #region Ark
@@ -162,6 +162,12 @@ namespace Cooper.Web.AliExtensions
         {
             base.SetConnectionUrls(state);
             ViewBag.ArkUrl = this.GetArkUrl(state);
+        }
+
+        private Taobao.Facades.UserInfo GetUser(string workId)
+        {
+            using (var wc = new WebClient() { Encoding = Encoding.UTF8 })
+                return _jsonHelper.Deserialize<Taobao.Facades.UserInfo>(wc.DownloadString(string.Format(this._api_user_workid, workId)));
         }
     }
 }

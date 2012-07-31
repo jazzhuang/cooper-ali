@@ -41,12 +41,12 @@
 <div class="well">
     @if (!cs.Any(o => o is GoogleConnection))
     {
-        <button class="btn btn-primary" onclick="window.open('@ViewBag.GoogleUrl')">
+        <button type="button" class="btn btn-primary" onclick="window.open('@ViewBag.GoogleUrl')">
             @this.Lang().add_google_connection</button>
     }
     @if (!cs.Any(o => o is GitHubConnection))
     {
-        <button class="btn btn-inverse" onclick="window.open('@ViewBag.GitUrl')">
+        <button type="button" class="btn btn-inverse" onclick="window.open('@ViewBag.GitUrl')">
             @this.Lang().add_git_connection</button>
     }
 </div>
