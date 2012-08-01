@@ -24,6 +24,12 @@
         return currentTaskListId;
     }
 
+    //判断当前网络是否可用
+    function isNetworkAvailable() {
+        //之后需要借助于native接口实现，目前先mock实现
+        return true;
+    }
+
     //----------------------------------------------------------------
     //以下函数与操作数据库相关
     //----------------------------------------------------------------
@@ -222,6 +228,10 @@
         //获取当前任务列表的所有任务
         var taskArray = loadTasksFromCurrentTaskList();
 
+        if (taskArray == null) {
+            return;
+        }
+
         var li1 = '<li style="background-color: #ebebeb">马上完成 <span class="ui-li-count">{0}</span></li>';
         var li2 = '<li style="background-color: #ebebeb">稍后完成 <span class="ui-li-count">{0}</span></li>';
         var li3 = '<li style="background-color: #ebebeb">迟些再说 <span class="ui-li-count">{0}</span></li>';
@@ -263,21 +273,23 @@
 
         var totalItems = [];
 
-        totalItems[totalItems.length] = li1.replace("{0}", items1.length);
-        for (var index = 0; index < items1.length; index++) {
-            totalItems[totalItems.length] = items1[index];
-        }
-        totalItems[totalItems.length] = li2.replace("{0}", items2.length);
-        for (var index = 0; index < items2.length; index++) {
-            totalItems[totalItems.length] = items2[index];
-        }
-        totalItems[totalItems.length] = li3.replace("{0}", items3.length);
-        for (var index = 0; index < items3.length; index++) {
-            totalItems[totalItems.length] = items3[index];
-        }
+        if (items1.length > 0 || items2.length > 0 || items3.length > 0) {
+            totalItems[totalItems.length] = li1.replace("{0}", items1.length);
+            for (var index = 0; index < items1.length; index++) {
+                totalItems[totalItems.length] = items1[index];
+            }
+            totalItems[totalItems.length] = li2.replace("{0}", items2.length);
+            for (var index = 0; index < items2.length; index++) {
+                totalItems[totalItems.length] = items2[index];
+            }
+            totalItems[totalItems.length] = li3.replace("{0}", items3.length);
+            for (var index = 0; index < items3.length; index++) {
+                totalItems[totalItems.length] = items3[index];
+            }
 
-        for (var index = 0; index < totalItems.length; index++) {
-            ul.append(totalItems[index]);
+            for (var index = 0; index < totalItems.length; index++) {
+                ul.append(totalItems[index]);
+            }
         }
 
         //刷新ul
@@ -384,7 +396,9 @@
 
     //刷新任务列表
     $(document).delegate("#refreshTaskListsImg", "click", function () {
+        $.mobile.showPageLoadingMsg();
         showAllTasklist();
+        setTimeout(function () { $.mobile.hidePageLoadingMsg(); }, 1000);
     });
     //新增编辑任务确定按钮
     $(document).delegate("#addOrUpdateTaskButton", "click", function () {
@@ -405,7 +419,7 @@
                 alert(result.message);
             }
             else {
-                showPage("taskPage", "listId=" + getCurrentTaskList(), "slide", "reverse");
+                showPage("taskPage", "listId=" + getCurrentTaskList(), "slidedown", "reverse");
             }
         });
     });
@@ -426,7 +440,9 @@
     });
     //刷新任务页面
     $(document).delegate("#refreshTasksImg", "click", function () {
+        $.mobile.showPageLoadingMsg();
         showTasks(getCurrentTaskList());
+        setTimeout(function () { $.mobile.hidePageLoadingMsg(); }, 1000);
     });
 
     //显示个人任务，包含已完成和未完成的所有任务
@@ -444,26 +460,16 @@
         taskStatusFilter = "false";
         showTasks(pageData.listId);
     });
-    //显示Setting页面
-    $(document).delegate("#showSettingImg", "click", function () {
-        //showTasks(getCurrentTaskList());
-    });
 
     //新增任务列表确定按钮
     $(document).delegate("#saveNewTaskList", "click", function () {
         addTaskList($("#tasklistName").val(), function (result) {
             if (!result.success) {
                 alert(result.message);
+                return false;
             }
-//            else {
-//                showPage("taskListPage", null, "slide", "reverse");
-//            }
         });
     });
-//    //新增任务列表取消按钮
-//    $(document).delegate("#cancelAddTaskList", "click", function () {
-//        showPage("taskListPage", null, "slide", "reverse");
-//    });
 
     //以下三个事件响应函数用户在任务详情页面自动更新用户修改
     //优先级
@@ -512,7 +518,14 @@
     //task page event handlers
     $(document).delegate("#taskPage", "pagebeforeshow", function () {
         setCurrentTaskList(pageData.listId);
-        showTasks(pageData.listId);
+        var taskArray = loadTasksFromCurrentTaskList();
+        if (taskArray == null || taskArray.length == 0) {
+            $("#addFirstTaskButton").show();
+        }
+        else {
+            $("#addFirstTaskButton").hide();
+        }
+        $('#showAllTasksImg').click();
     });
     //task detail page event handlers
     $(document).delegate("#taskDetailPage", "pagebeforeshow", function () {

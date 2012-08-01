@@ -90,6 +90,10 @@ debuger.isErrorEnable = debuger.enable && true;
           commandline="${msbuild.params} ${msbuild.params.output}\cooper_model_test"
           workingdir="${dir}\src\Cooper.Model.Test" />
     <exec program="${nunit}" commandline="Cooper.Model.Test.dll" workingdir="${build.absolutepath}\cooper_model_test"/>
+    <!--/exclude=concurrent-->
+  </target>
+  
+  <target name="test_model_ali">
     <!--ali extensions test-->
     <exec program="${msbuild}"
           commandline="${msbuild.params} ${msbuild.params.output}\alicooper_model_test"
