@@ -34,9 +34,11 @@ namespace Cooper.Web.AliExtensions
             , string googleOAuth2Url
             , string googleOAuth2TokenUrl
             , string googleOAuth2UserUrl
+            , string googleScope
             , string googleClientId
             , string googleClientSecret
-            , string googleScope
+            , string googleClientId_mobi
+            , string googleClientSecret_mobi
 
             , string gitOAuthUrl
             , string gitOAuthTokenUrl
@@ -60,9 +62,11 @@ namespace Cooper.Web.AliExtensions
             , googleOAuth2Url
             , googleOAuth2TokenUrl
             , googleOAuth2UserUrl
+            , googleScope
             , googleClientId
             , googleClientSecret
-            , googleScope
+            , googleClientId_mobi
+            , googleClientSecret_mobi
 
             , gitOAuthUrl
             , gitOAuthTokenUrl
