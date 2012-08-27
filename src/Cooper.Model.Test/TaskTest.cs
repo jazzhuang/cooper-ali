@@ -39,8 +39,7 @@ namespace Cooper.Model.Test
             //Assert.AreEqual(task.CreateTime, task2.CreateTime);
             //Assert.AreEqual(task.LastUpdateTime, task2.LastUpdateTime);
             Assert.AreEqual(task.CreatorAccountId, task2.CreatorAccountId);
-            Assert.AreEqual(task.AssignedContacterId, task2.AssignedContacterId);
-            Assert.AreEqual(task.TasklistId, task2.TasklistId);
+            Assert.AreEqual(task.TaskFolderId, task2.TaskFolderId);
         }
         [Test]
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
@@ -62,7 +61,7 @@ namespace Cooper.Model.Test
             Assert.AreEqual(task.LastUpdateTime, old);
             task.SetBody(string.Empty);
             Assert.Greater(task.LastUpdateTime, old);
-            //duetime
+            //dueTime
             old = task.LastUpdateTime;
             this.Idle();
             task.SetDueTime(null);
@@ -74,14 +73,14 @@ namespace Cooper.Model.Test
             Assert.AreEqual(task.LastUpdateTime, old);
             task.SetPriority(Priority.Upcoming);
             Assert.Greater(task.LastUpdateTime, old);
-            //tasklist
+            //taskfolder
             old = task.LastUpdateTime;
             this.Idle();
-            var list = this.CreatePersonalTasklist(a);
-            task.SetTasklist(list);
+            var folder = this.CreatePersonalTaskFolder(a);
+            task.SetTaskFolder(folder);
             Assert.Greater(task.LastUpdateTime, old);
             old = task.LastUpdateTime;
-            task.SetTasklist(list);
+            task.SetTaskFolder(folder);
             Assert.AreEqual(task.LastUpdateTime, old);
         }
         [Test]
@@ -89,50 +88,52 @@ namespace Cooper.Model.Test
         public void GetAll()
         {
             var a = this.CreateAccount();
-            var list = this.CreatePersonalTasklist(a);
-            
+            var folder = this.CreatePersonalTaskFolder(a);
+
             var task = new Task(a);
             this._taskService.Create(task);
 
             task = new Task(a);
-            task.SetTasklist(list);
+            task.SetTaskFolder(folder);
             this._taskService.Create(task);
 
             task = new Task(a);
-            task.SetTasklist(list);
+            task.SetTaskFolder(folder);
             this._taskService.Create(task);
 
             Assert.AreEqual(3, this._taskService.GetTasks(a).Count());
-            Assert.AreEqual(2, this._taskService.GetTasks(a, list).Count());
+            Assert.AreEqual(2, this._taskService.GetTasks(a, folder).Count());
+            Assert.AreEqual(1, this._taskService.GetTasksNotBelongAnyFolder(a).Count());
         }
         [Test]
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
         public void GetIncompleted()
         {
             var a = this.CreateAccount();
-            var list = this.CreatePersonalTasklist(a);
+            var folder = this.CreatePersonalTaskFolder(a);
 
             var task = new Task(a);
             this._taskService.Create(task);
 
             task = new Task(a);
-            task.SetTasklist(list);
+            task.SetTaskFolder(folder);
             this._taskService.Create(task);
 
             task = new Task(a);
             task.MarkAsCompleted();
-            task.SetTasklist(list);
+            task.SetTaskFolder(folder);
             this._taskService.Create(task);
 
             Assert.AreEqual(2, this._taskService.GetIncompletedTasks(a).Count());
-            Assert.AreEqual(1, this._taskService.GetIncompletedTasks(a, list).Count());
+            Assert.AreEqual(1, this._taskService.GetIncompletedTasks(a, folder).Count());
+            Assert.AreEqual(1, this._taskService.GetIncompletedTasksAndNotBelongAnyFolder(a).Count());
         }
 
         private void Dump(params Task[] tasks)
         {
             if (tasks == null) return;
             tasks.ToList().ForEach(o => this._log.InfoFormat(
-                "{0}|{1}|{2}|{3}|{4}|{5}|{6}|{7}|{8}"
+                "{0}|{1}|{2}|{3}|{4}|{5}|{6}|{7}"
                 , o.Subject
                 , o.Body
                 , o.Priority
@@ -140,8 +141,7 @@ namespace Cooper.Model.Test
                 , o.IsCompleted
                 , o.CreateTime
                 , o.LastUpdateTime
-                , o.CreatorAccountId
-                , o.AssignedContacterId));
+                , o.CreatorAccountId));
         }
     }
 }

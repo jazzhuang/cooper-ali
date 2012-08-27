@@ -1,11 +1,10 @@
 ﻿<!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8" />
     <title>@ViewBag.Title - @this.Lang().personal_setting @this.Suffix()</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link type="text/css" rel="Stylesheet" href="@Url.Content("~/content/bootstrap/css/bootstrap.min.css")" />
-    <link type="text/css" rel="Stylesheet" href="@Url.Content("~/content/jquery/css/smoothness/jquery-ui-1.8.21.custom.css")" />
-    <link type="text/css" rel="Stylesheet" href="@Url.Content("~/content/css/base.css")" />
+    @{ Html.RenderPartial("Style"); }
 </head>
 <body>
     <div class="container-fluid" style="margin-top: 10px;">
@@ -20,7 +19,6 @@
     </div>
     
     @{ Html.RenderSettings(); }
-    <script type="text/javascript" src="@Url.Content("~/scripts/account.js")"></script>
 
     <script type="text/javascript">
         $(function () {

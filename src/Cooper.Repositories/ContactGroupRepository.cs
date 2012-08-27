@@ -2,8 +2,7 @@
 
 using System.Collections.Generic;
 using CodeSharp.Core.Castles;
-using Cooper.Model.AddressBooks;
-using Cooper.Model.ContactGroups;
+using Cooper.Model.Contacts;
 using NHibernate.Criterion;
 
 namespace Cooper.Repositories

@@ -20,13 +20,34 @@ namespace Cooper.Model.Mappings
             Map(m => m.Priority).CustomType<Priority>();
             Map(m => m.DueTime).Nullable();
             Map(m => m.IsCompleted);
-            
+
             Map(m => m.CreateTime);
             Map(m => m.LastUpdateTime);
 
             Map(m => m.CreatorAccountId);
-            Map(m => m.AssignedContacterId);
-            Map(m => m.TasklistId).Nullable();
+            Map(m => m.TaskFolderId).Column("TasklistId").Nullable();
+            DiscriminateSubClassesOnColumn("TaskType");
+        }
+    }
+    public class TeamTaskMap : SubclassMap<Cooper.Model.Teams.Task>
+    {
+        public TeamTaskMap()
+        {
+            Table("Cooper_Task");
+            EntityName("TeamTask");
+            Map(m => m.TeamId);
+            Map(m => m.AssigneeId);
+            HasMany(m => m.Comments)
+                .KeyColumn("TaskId")
+                .LazyLoad()
+                .Cascade
+                .SaveUpdate();
+            HasManyToMany(m => m.Projects)
+                .Table("Cooper_TaskProjectRelationship")
+                .ParentKeyColumn("TaskId")
+                .ChildKeyColumn("ProjectId")
+                .LazyLoad();
+            DiscriminatorValue("team");
         }
     }
 }

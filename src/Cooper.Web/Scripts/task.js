@@ -2,23 +2,8 @@
 
 ///<reference path="lang.js" />
 ///<reference path="common.js" />
-/////////////////////////////////////////////////////////////////////////////////////////
-//global specials of tasks
-var cached_tasks = null;
-var cached_idxs = null;
+
 var identity = 0;
-var changes_delete = [];//用于记录删除
-//template
-var tmp_region = $('#tmp_region').html();
-var tmp_item = $('#tmp_region tbody').html();
-var tmp_item_region_name = "tbody";
-var tmp_detail = $('#tmp_detail').html();
-var tmp_detail_batch = $('#tmp_detail_batch').html();
-//$element
-var $el_wrapper_region = $('#todolist_wrapper');
-var $el_wrapper_detail = $('#detail_wrapper');
-var $el_cancel_delete = $('#cancel_delete');
-/////////////////////////////////////////////////////////////////////////////////////////
 //描述任务缓存项
 var Task = function () { this._init.apply(this, arguments); }
 Task.prototype = {
@@ -28,6 +13,7 @@ Task.prototype = {
     _init: function () {
         var t = arguments.length > 0 ? arguments[0] : {};
         this.editable = t['Editable'] == undefined ? true : t['Editable'];
+        //数据格式适配
         this['data'] = {
             'id': t['ID'] != undefined ? t['ID'].toString() : 'temp_' + (++identity) + '_' + new Date().getTime(), //可自动构建临时id 总是以string使用
             'subject': t['Subject'] != undefined ? t['Subject'] : '',
@@ -35,34 +21,84 @@ Task.prototype = {
             'priority': t['Priority'] != undefined ? t['Priority'] : 0, //0=today 1=upcoming 2=later priority 总是以string使用
             'dueTime': t['DueTime'] != undefined && t['DueTime'] != null && t['DueTime'] != '' ? this._parseDate(t['DueTime']) : null,
             'isCompleted': t['IsCompleted'] != undefined ? t['IsCompleted'] : false,
-            'tags': []
+            'tags': [],
+            //team模块相关
+            'assignee': t['Assignee'] != undefined ? { 'id': t['Assignee']['ID'] || t['Assignee']['id'], 'name': t['Assignee']['Name'] || t['Assignee']['name']} : null,
+            'assigneeId': t['Assignee'] ? t['Assignee']['ID'] || t['Assignee']['id'] : null,
+            'projects': t['Projects'] ? $.map(t['Projects'], function (n) { return { 'id': n['ID'] || n['id'], 'name': n['Name'] || n['name'] }; }) : []
         }
         this.$el_row = this._generateItem(this['data']);
         this.$el_detail = null;
+
+        if (debuger.isDebugEnable)
+            this._getRowEl('subject').attr('placeholder', '#' + this.id());
     },
-    _generateItem: function (d) { return $(render(tmp_item, d)); },
-    _generateDetail: function (d) { return $(render(tmp_detail, d)); },
+    _generateItem: function (d) { return $(render($('#tmp_region tbody').html(), d)); },
+    _generateDetail: function (d) { d.dueTimeId = 'dueTime'; return $(render($('#tmp_detail').html(), d)); },
     _parseDate: function (t) { return typeof (t) == 'string' ? $.datepicker.parseDate('yy-mm-dd', t) : t; },
     _parseDateString: function (t) { return (t.getMonth() + 1) + '-' + t.getDate(); },
     _parseFullDateString: function (t) { return t.getFullYear() + '-' + (t.getMonth() + 1) + '-' + t.getDate(); },
+    _getRowEl: function (p) {
+        var k = '$' + p;
+        if (!this.$el_row[k])
+            this.$el_row[k] = this.$el_row.find('#' + p);
+        return this.$el_row[k];
+    },
+    _getDetailEl: function (p) {
+        var k = '$' + p;
+        if (!this.$el_detail[k])
+            this.$el_detail[k] = this.$el_detail.find('#' + p);
+        return this.$el_detail[k];
+    },
+    _setClass: function ($e, b, c) { $e[b ? 'addClass' : 'removeClass'](c); },
+    _pickString: function (a, n, s) {
+        if (!a || a.length == 0)
+            return '';
+        var str = [a.length];
+        for (var i = 0; i < a.length; i++)
+            str[i] = a[i][n];
+        return str.join(s);
+    },
+    _addDeleteChange: function (k, i) {
+        this._addChange(k + i, { 'Name': k, 'Value': i, 'Type': 1 });
+    },
+    _addInsertChange: function (k, i) {
+        this._addChange(k + i, { 'Name': k, 'Value': i, 'Type': 2 });
+    },
+    _addChange: function (k, c) {
+        c['ID'] = this.id();
+        //变更列表，用于提交到server
+        if (!this.changes)
+            this.changes = {};
+        //只记录最后一次
+        this.changes[k] = c;
+        debuger.info('new changelog for ' + k + ' of task#' + this.id(), this.changes[k]);
+    },
+    ///////////////////////////////////////////////////////////////////////////////
     renderRow: function () {
         this.setCompleted(this.isCompleted());
         this.setPriority(this.priority());
-        this.setDueTime(this.dueTime());
+        this.setDueTime(this.due());
+        this.setAssignee(this.assignee());
     },
     renderDetail: function () {
         if (!this.$el_detail)
             this.$el_detail = this._generateDetail(this['data']);
-        //datepicker重复初始化问题
-        this.$el_detail.find('#dueTime').removeClass('hasDatepicker');
-        if (this.editable)
-            this.$el_detail.find('#dueTime').datepicker();
+        if (this.editable) {
+            //部分事件如blur无法全局因此在此执行一些额外的rebind
+            if (this.bind_detail)
+                this.bind_detail(this.$el_detail, this);
+            if (this.bind_detail_team)
+                this.bind_detail_team(this.$el_detail, this);
+        }
         //设置值
         this.setDetail_Completed(this.isCompleted());
         this.setDetail_Subject(this.subject());
         this.setDetail_Priority(this.priority());
-        this.setDetail_DueTime(this.dueTime());
-        this.setDetail_Body(this.get('body'));
+        this.setDetail_DueTime(this.due());
+        this.setDetail_Body(this.body());
+        this.setDetail_Assignee(this.assignee());
+        this.setDetail_Projects(this.projects());
         //设置url快捷链接区域 临时方案
         var $urls = this.$el_detail.find('#urls');
         $urls.find('ul').empty();
@@ -76,10 +112,10 @@ Task.prototype = {
         $urls.parents('tr')[i == 0 ? 'hide' : 'show']();
         $urls.find('button:eq(1)')[i == 1 ? 'hide' : 'show']();
         $urls.find('url')[i == 1 ? 'hide' : 'show']();
-
+        //TODO:详情插件扩展在此追加
         return this.$el_detail;
     },
-    //额外修正一些显示问题 由于未呈现导致的
+    //额外修正一些显示问题 由于未呈现(append)导致的UI问题
     fixDetail: function () {
         this.setDetail_Body(this.get('body'));
     },
@@ -98,12 +134,7 @@ Task.prototype = {
         if (!this.editable) return;
         if (this['data'][k] == v) return false;
         this['data'][k] = v;
-        //设计变更列表，用于提交到server
-        if (!this.changes)
-            this.changes = {};
-        //只记录最后一次
-        this.changes[k] = { 'ID': this.id(), 'Name': k, 'Value': v };
-        debuger.info('new changelog ' + k + ' of ' + this.id(), this.changes[k]);
+        this._addChange(k, { 'Name': k, 'Value': v });
         return true;
     },
     set: function (k, v) {
@@ -120,61 +151,93 @@ Task.prototype = {
         this.changes = null;
         return arr;
     },
+    ///////////////////////////////////////////////////////////////////////////////
     //常用属性
     el: function () { return this.$el_row; },
     id: function () { return this.get('id'); },
     isCompleted: function () { return this.get('isCompleted') },
     priority: function () { return this.get('priority') },
-    dueTime: function () { return this.get('dueTime'); },
+    due: function () { return this.get('dueTime'); },
     subject: function () { return this.get('subject'); },
+    body: function () { return this.get('body'); },
+    assignee: function () { return this.get('assignee'); },
+    projects: function () { return this.get('projects'); },
     ///////////////////////////////////////////////////////////////////////////////
     //属性以及ui设置
     setId: function (i) {
         this['data']['id'] = i;
         this.$el_row.attr('id', i);
         this.setDetail_Id(i);
+        if (debuger.isDebugEnable)
+            this._getRowEl('subject').attr('placeholder', '#' + this.id());
     },
-    setIndex: function (i) {
-        this.$el_row.find('.cell_num span').html(i);
-    },
+    setIndex: function (i) { this._getRowEl('index').html(i); },
     setSubject: function (s, f) {
-        this.update('subject', s);
+        var k = 'subject';
+        this.update(k, s);
         //为双向同步而设置的f标识
         if (f == undefined || !f)
             this.setDetail_Subject(s);
         else if (f)
-            this.$el_row.find('input').val(s);
+            this._getRowEl(k).val(s);
     },
     setBody: function (b) {
         this.update('body', b);
         this.setDetail_Body(b);
     },
     setCompleted: function (b) {
-        this.update('isCompleted', b);
-        this.$el_row.find('.cell_bool .nav').eq(0).find('.icon-ok').css('display', b ? 'block' : 'none');
-        this.$el_row[b ? 'addClass' : 'removeClass']('row_completed');
+        var k = 'isCompleted';
+        this.update(k, b);
+        this._getRowEl(k).css('display', b ? 'block' : 'none');
+        this._setClass(this.$el_row, b, 'row_completed');
         this.setDetail_Completed(b);
     },
     setPriority: function (p) {
-        this.update('priority', p.toString());
+        var k = 'priority';
+        this.update(k, p.toString());
         //设置priority图标显示与否 避免出现inline
-        this.$el_row.find('.cell_bool .nav').eq(0).find('.icon-time').css('display', p == 0 ? 'block' : 'none');
+        this._getRowEl('priority').css('display', p == 0 ? 'block' : 'none');
         this.setDetail_Priority(p);
     },
     setDueTime: function (t) {
+        var k = 'dueTime';
+        //为避免与detail区域的input#deuTime重复id，而导致jqdatepicker异常
+        //https://github.com/codesharp/cooper/issues/41
+        var $e = this._getRowEl(k + 'Label');
         if (t == undefined || t == null) {
-            this.update('dueTime', null);
-            this.$el_row.find('.cell_duetime').html('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
+            this.update(k, null);
+            $e.html('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
             return;
         }
-        this.update('dueTime', t);
+        this.update(k, t);
         var today = $.datepicker.parseDate('yy-mm-dd', this._parseFullDateString(new Date())).getTime();
         var date = $.datepicker.parseDate('yy-mm-dd', this._parseFullDateString(t)).getTime();
         //优化用户化文本显示
-        this.$el_row.find('.cell_duetime').html(today == date ? lang.today : this._parseDateString(t));
+        $e.html(today == date ? lang.today : this._parseDateString(t));
         //过期标记
-        this.$el_row.find('.cell_duetime')[today >= date ? 'addClass' : 'removeClass']('cell_duetime_expired');
+        this._setClass($e, today >= date, 'cell_duetime_expired');
         this.setDetail_DueTime(t);
+    },
+    setAssignee: function (u) {
+        var k = 'assignee';
+        this.update(k + 'Id', u ? u['id'] : null); //只更新assigneeId
+        this['data'][k] = u; //直接更新assignee对象
+        this._getRowEl(k).html(u ? u['name'] : '').css('display', u ? 'block' : 'none');
+        this.setDetail_Assignee(u);
+    },
+    setProjects: function (ps) {
+        if (!ps) return;
+        this['data']['projects'] = ps; //直接更新projects数组
+        this.setDetail_Projects(ps);
+    },
+    addProject: function (p) {
+        debuger.assert(p);
+        this._addInsertChange('projects', p['id']);
+        this.setProjects($.merge($.grep(this.projects(), function (n, i) { return n['id'] != p['id']; }), [p]));
+    },
+    removeProject: function (p) {
+        this._addDeleteChange('projects', p);
+        this.setProjects($.grep(this.projects(), function (n, i) { return n['id'] != p; }));
     },
     ///////////////////////////////////////////////////////////////////////////////
     //detail设置
@@ -184,11 +247,11 @@ Task.prototype = {
     },
     setDetail_Subject: function (s) {
         if (!this.$el_detail) return;
-        this.$el_detail.find('#subject').val(s);
+        this._getDetailEl('subject').val(s);
     },
     setDetail_Body: function (b, f) {
         if (!this.$el_detail) return;
-        var $el = this.$el_detail.find('#body');
+        var $el = this._getDetailEl('body');
         //修正高度 自适应
         var base = $el[0];
         //$el.height('');//auto
@@ -202,39 +265,50 @@ Task.prototype = {
     },
     setDetail_Priority: function (p) {
         if (!this.$el_detail) return;
-        this.$el_detail.find('#priority button')
+        this._getDetailEl('priority')
+            .find('button')
             .removeClass('active')
-            .eq(parseInt(p)).addClass('active');
+            .eq(parseInt(p))
+            .addClass('active');
     },
     setDetail_Completed: function (b) {
         if (!this.$el_detail) return;
-        this.$el_detail.find('#isCompleted')
-            [b ? 'addClass' : 'removeClass']('active')
-            [b ? 'addClass' : 'removeClass']('btn-success');
+        this._setClass(this._getDetailEl('isCompleted'), b, 'active');
+        this._setClass(this._getDetailEl('isCompleted'), b, 'btn-success');
     },
     setDetail_DueTime: function (t) {
         if (!this.$el_detail) return;
         if (t != null)
-            this.$el_detail.find('#dueTime').val(this._parseFullDateString(t));
+            this._getDetailEl('dueTime').val(this._parseFullDateString(t));
+    },
+    setDetail_Assignee: function (u) {
+        if (!this.$el_detail) return;
+        this._getDetailEl('assignee').html(u ? u['name'] : '');
+    },
+    setDetail_Projects: function (ps) {
+        if (!this.$el_detail || !ps) return;
+        if (this.render_detail_projects)
+            this.render_detail_projects(this._getDetailEl('projects'), ps);
     }
 }
 /////////////////////////////////////////////////////////////////////////////////////////
-//描述任务排序索引缓存
-var Idx = function () { this._init.apply(this, arguments); }
-Idx.prototype = {
+//描述任务排序数据缓存
+var Sort = function () { this._init.apply(this, arguments); }
+Sort.prototype = {
     $el_region: null,
     _init: function () {
         this['by'] = arguments[0];
         this['key'] = arguments[1]; //0,1,2,prj1,team1
         this['name'] = arguments[2]; //今天、稍后、迟些、项目1、团队1
         this['idx'] = arguments[3]; //[0,1,2,4]
-        this.$el_region = this._generateRegion();
+        this.$el_region = $(render($('#tmp_region').html(), this));
+        this._clearRegion();
     },
-    _generateRegion: function () {
-        var $el = $(render(tmp_region, this));
-        $el.find(tmp_item_region_name).empty();
-        return $el;
-    },
+    _getTask: null, //涉及全局变量处理由全局UI指定此实现
+    _getRows: function () { return this.el().find('tbody').find('tr') },
+    _append: function (e) { this.el().find('tbody').append(e); },
+    _prepend: function (e) { this.el().find('tbody').prepend(e); },
+    _clearRegion: function () { this.el().find('tbody').empty() },
     dispose: function () {
         if (!this.$el_region) return;
         this.$el_region.remove();
@@ -242,77 +316,47 @@ Idx.prototype = {
     },
     el: function () { return this.$el_region; },
     indexs: function (idx) { if (idx) this['idx'] = idx; return this['idx']; },
-    //渲染至region内
     render: function () {
-        this.$el_region.find(tmp_item_region_name).empty();
+        this._clearRegion();
         var idx = this.indexs();
         for (var i = 0; i < idx.length; i++) {
             var id = idx[i].toString();
-            var task = cached_tasks[id];
+            var task = this._getTask(id);
             if (!task) {
                 debuger.error('wrong id ' + id, idx);
                 continue;
             }
             task.renderRow();
             task.setIndex(i + 1); //设置索引显示
-            this.$el_region.find(tmp_item_region_name).append(task.el());
+            this._append(task.el());
         }
         //总数
-        this.$el_region.find('.badge').html(idx.length);
+        this.el().find('#region_total').html(idx.length);
     },
     //根据el刷新索引数据以及对应索引显示
-    flush: function (k) {
+    flush: function (b) {
         var base = this;
-        var $els = this.$el_region.find(tmp_item_region_name).find('tr');
+        var $els = this._getRows();
         var ary = new Array($els.length);
         $els.each(function (i, n) {
             var id = $(n).attr('id');
             ary[i] = id;
-            cached_tasks[id].setIndex(i + 1); //设置索引显示
+            base._getTask(id).setIndex(i + 1); //设置索引显示
             //依据idx数据额外修正task数据
-            if (k != undefined)
-                cached_tasks[id].set(k, base['key']);
+            if (b)
+                base._getTask(id).set(base['by'], base['key']);
         });
         this['idx'] = ary;
-        this.$el_region.find('.badge').html(ary.length);
+        this.el().find('#region_total').html(ary.length);
     },
     //实时刷新并获取索引
     getIndexs: function () {
-        var $els = this.$el_region.find(tmp_item_region_name).find('tr');
+        var $els = this._getRows();
         var ary = new Array($els.length);
-        $els.each(function (i, n) {
-            var id = $(n).attr('id');
-            ary[i] = id;
-        });
-        this['idx'] = ary;
+        $els.each(function (i, n) { ary[i] = $(n).attr('id'); });
+        this['idx'] = ary; //$.grep(ary, function (n) { return n != '' && n != null });
         return this['idx'];
     },
-    append: function (t) { this.el().find(tmp_item_region_name).append(t.el()); this.flush(); },
-    prepend: function (t) { this.el().find(tmp_item_region_name).prepend(t.el()); this.flush(); }
-}
-////////////////////////////////////////////////////////////////////////////////////////
-//all=来自server的所有任务数组
-//idx=优先级排序
-function init(all, idxs) {
-    //清理
-    if (cached_tasks)
-        for (var i in cached_tasks)
-            if (cached_tasks[i])
-                cached_tasks[i].dispose();
-    if (cached_idxs)
-        for (var i in cached_idxs)
-            if (cached_idxs[i])
-                cached_idxs[i].dispose();
-    //构建本地缓存 cached_tasks
-    cached_tasks = {};
-    for (var i = 0; i < all.length; i++)
-        cached_tasks[all[i]['ID'].toString()] = new Task(all[i]);
-    debuger.info('original tasks', all);
-    debuger.info('cached tasks', cached_tasks);
-    //构建分组排序缓存 cached_idx {'0':List}
-    cached_idxs = {};
-    for (var i = 0; i < idxs.length; i++)
-        cached_idxs[idxs[i]['Key']] = new Idx(idxs[i]['By'], idxs[i]['Key'], idxs[i]['Name'], idxs[i]['Indexs']);
-    debuger.info('original sorts', idxs);
-    debuger.info('cached sorts', cached_idxs);
+    append: function (t, b) { this._append(t.el()); this.flush(b); }, //不可this.flush(true)
+    prepend: function (t, b) { this._prepend(t.el()); this.flush(b); }
 }

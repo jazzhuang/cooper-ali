@@ -32,13 +32,10 @@ namespace Cooper.Web
             routes.IgnoreRoute("{*favicon}", new { favicon = @"(.*/)?favicon.ico(/.*)?" });
 
             routes.MapRoute("Personal", "per/{action}/{id}", new { controller = "Personal", action = "Index", id = UrlParameter.Optional });
-            routes.MapRoute("Professional", "pro/{action}/{id}", new { controller = "Professional", action = "Index", id = UrlParameter.Optional });
-            routes.MapRoute("Enterprise", "ent/{action}/{id}", new { controller = "Enterprise", action = "Index", id = UrlParameter.Optional });
-
-            routes.MapRoute("Account"
-                , "Account/{action}/{id}"
-                , new { controller = "Account", action = "Profile", id = UrlParameter.Optional }
-                , new string[] { "Cooper.Web.AliExtensions" });//使用ali扩展的account
+            routes.MapRoute("Team", "t/{teamId}", new { controller = "Team", action = "Index" });
+            routes.MapRoute("TeamProject", "t/{teamId}/p/{projectId}", new { controller = "Team", action = "Index" });
+            routes.MapRoute("TeamMember", "t/{teamId}/m/{memberId}", new { controller = "Team", action = "Index" });
+            routes.MapRoute("Account", "Account/{action}/{id}", new { controller = "Account", action = "Profile", id = UrlParameter.Optional }, new string[] { "Cooper.Web.AliExtensions" });//使用ali扩展的account
             routes.MapRoute("Default", "{controller}/{action}/{id}", new { controller = "Home", action = "Index", id = UrlParameter.Optional });
         }
         protected void Application_Start()
@@ -98,7 +95,7 @@ namespace Cooper.Web
             //注册web上下文
             windsor.RegisterComponent(typeof(Cooper.Web.Controllers.WebContextService));
             //注册Fetch扩展
-            windsor.RegisterComponent(typeof(Cooper.Web.Controllers.FetchTasklistHelper));
+            windsor.RegisterComponent(typeof(Cooper.Web.Controllers.FetchTaskHelper));
         }
         private void ParpareExtend(WindsorResolver r)
         {
@@ -125,7 +122,7 @@ namespace Cooper.Web
         }
     }
 
-    /// <summary>描述系统内已经异常
+    /// <summary>描述系统内已知异常
     /// </summary>
     public class CooperknownException : Exception
     {
@@ -277,10 +274,14 @@ public static class WebExtensions
     }
     public class LangExpando : System.Dynamic.DynamicObject
     {
+        public static IDictionary<string, string> Langs = new Dictionary<string, string>();
         public override bool TryGetMember(System.Dynamic.GetMemberBinder binder, out object result)
         {
             //HACK:目前默认zh-cn语言
-            result = CodeSharp.Framework.SystemConfig.Settings["zhcn_" + binder.Name] ?? binder.Name;
+            result = CodeSharp.Framework.SystemConfig.Settings["zhcn_" + binder.Name];
+            result = string.IsNullOrEmpty((string)result) ? binder.Name : result;
+            if (!Langs.ContainsKey(binder.Name))
+                Langs.Add(binder.Name, result.ToString());
             return true;
         }
     }

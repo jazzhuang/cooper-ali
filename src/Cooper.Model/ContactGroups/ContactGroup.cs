@@ -4,10 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeSharp.Core.DomainBase;
-using Cooper.Model.AddressBooks;
 using Cooper.Model.Contacts;
 
-namespace Cooper.Model.ContactGroups
+namespace Cooper.Model.Contacts
 {
     /// <summary>联系人组
     /// <remarks>
@@ -44,13 +43,12 @@ namespace Cooper.Model.ContactGroups
 
         /// <summary>设置名称
         /// <remarks>
-        /// 长度应小于100
+        /// 长度应小于255
         /// </remarks>
         /// </summary>
         public void SetName(string name)
         {
-            Assert.IsNotNullOrWhiteSpace(name);
-            Assert.LessOrEqual(name.Length, 100);
+            Assert.IsValidKey(name);
 
             if (this.Name != name)
             {

@@ -5,7 +5,7 @@
 ///<reference path="task.js" />
 ///<reference path="task_common.js" />
 
-//根据duetime排序任务列表UI模式
+//根据dueTime排序任务列表UI模式
 var UI_List_Due = function () { }
 UI_List_Due.prototype = new UI_List_Common();
 UI_List_Due.prototype.mode = 'ByDueTime';
@@ -27,8 +27,8 @@ UI_List_Due.prototype.renderByDueTime = function (b) {
     var idx = this.byDueTime.indexs();
     for (var i = 0; i < idx.length; i++) {
         for (var j = idx.length - 1; j > 0; j--) {
-            var r = cached_tasks[idx[j]].dueTime().getTime();
-            var l = cached_tasks[idx[j - 1]].dueTime().getTime();
+            var r = this.getTaskById(idx[j]).due().getTime();
+            var l = this.getTaskById(idx[j - 1]).due().getTime();
             if (r < l) {
                 var temp = idx[j - 1];
                 idx[j - 1] = idx[j];
@@ -42,7 +42,6 @@ UI_List_Due.prototype.renderByDueTime = function (b) {
 }
 ////////////////////////////////////////////////////////////////////////////////////////
 //额外实现父级定义的扩展
-//UI_List_Due.prototype.onFlushIdxs = function () { this.byDueTime.flush(); }
 //优先级调整时
 UI_List_Due.prototype.onPriorityChange = function ($r, task, old, p) {
     //排除时间排序区域
@@ -61,15 +60,15 @@ UI_List_Due.prototype.onPrepareBinds = function () {
         var $actives = base.getActives();
 
         if (ctrl) {
-            //针对duetime排序区域将上下移动行为调整为dueTime变更
+            //针对dueTime排序区域将上下移动行为调整为dueTime变更
             //仅支持单个
             if ((!up && !down)
                 || $actives.length != 1
                 || $focus == null
                 || !base._isDueTimeRow($focus)) return;
 
-            var task = cached_tasks[base.getTaskId($focus)];
-            var dueTime = task.dueTime();
+            var task = base.getTask($focus);
+            var dueTime = task.due();
             var day = 86400000;
             if (up)
                 dueTime = addDay(dueTime, -1);
@@ -78,8 +77,8 @@ UI_List_Due.prototype.onPrepareBinds = function () {
             task.setDueTime(dueTime);
             //优化 避免重新排序
             var arr = base._findNextAndPrev($focus);
-            var prev = arr[0] == null ? null : base.getTask(arr[0]).dueTime();
-            var next = arr[1] == null ? null : base.getTask(arr[1]).dueTime();
+            var prev = arr[0] == null ? null : base.getTask(arr[0]).due();
+            var next = arr[1] == null ? null : base.getTask(arr[1]).due();
             if ((prev == null || prev.getTime() <= dueTime) && (next == null || next.getTime() >= dueTime))
                 return false;
             //重排序
@@ -89,9 +88,8 @@ UI_List_Due.prototype.onPrepareBinds = function () {
             return false; //避免滚动条移动
         }
     });
-    //dueTime区域crtl移动=修改duetime时间
 }
-//批量变更duetime时
+//批量变更dueTime时
 UI_List_Due.prototype.onDueTimeBatchChange = function (tasks, t) {
     for (var i = 0; i < tasks.length; i++)
         if (this._isDueTimeRow(tasks[i].el())) {
@@ -104,19 +102,15 @@ UI_List_Due.prototype.onDueTimeBatchChange = function (tasks, t) {
 UI_List_Due.prototype._isValidRegion = function ($r) { return !this._isDueTimeRegion($r); }
 UI_List_Due.prototype._isRowOfValidRegion = function ($r) { return !this._isDueTimeRow($r); }
 UI_List_Due.prototype.render = function () {
-    //modeargs
-    debuger.debug(this.modeArgs);
-    //this.modeArgs.shortcuts_canSetCompleted_RowOfInValidRegion = true;
-
     this.$wrapper.empty();
     //dueTime排序区域
-    this.byDueTime = cached_idxs['dueTime'];
+    this.byDueTime = this.getSortByKey('dueTime');
     this.renderByDueTime(true);
     this.$wrapper.append(this.byDueTime.el().addClass('todolist_dueTime'));
     //优先级区域
-    this._renderByIdx(this.today);
-    this._renderByIdx(this.upcoming);
-    this._renderByIdx(this.later);
+    this._renderBySort(this.today);
+    this._renderBySort(this.upcoming);
+    this._renderBySort(this.later);
     //默认追加一条
     if (this.getTasks().length == 0)
         this.appendTask(0);
@@ -127,7 +121,7 @@ UI_List_Due.prototype.render = function () {
 }
 UI_List_Due.prototype.appendTask = function (p) {
     var t = new Task();
-    cached_tasks[t.id()] = t;
+    this.setTask(t.id(), t);
     //基本渲染
     t.renderRow();
 
@@ -140,22 +134,26 @@ UI_List_Due.prototype.appendTask = function (p) {
     else if (($actives = this.getActives()).length == 1)
         $row = $actives;
     if ($row != null) {
-        var active = cached_tasks[this.getTaskId($row)];
+        var active = this.getTask($row);
         this._appendTaskToRow($row, t, active);
 
-        var dueTime = active.dueTime();
+        var dueTime = active.due();
         if (dueTime != null) {
+            t['data']['dueTime'] = dueTime;
             t.setDueTime(dueTime);
             this.byDueTime.flush();
         } else {
+            t['data']['priority'] = active.priority();
             t.setPriority(active.priority());
-            cached_idxs[t.priority()].flush();
+            this.getSortByKey(t.priority()).flush();
         }
     }
     //默认追加到later
     else {
-        t.setPriority(p == undefined ? 2 : p);
-        cached_idxs[t.priority()].append(t);
+        p = p == undefined ? 2 : p;
+        t['data']['priority'] = p;
+        t.setPriority(p);
+        this.getSortByKey(t.priority()).append(t);
     }
 
     //由于新增需要重新hover
@@ -172,11 +170,5 @@ function addDay(t, d) {
 //对象创建
 function create_UI_List_Due() {
     var ui = new UI_List_Due();
-    ui.child = ui;
-
-    ui.$wrapper = $el_wrapper_region;
-    ui.$wrapper_detail = $el_wrapper_detail;
-    ui.$cancel_delete = $el_cancel_delete;
-
     return ui;
 }

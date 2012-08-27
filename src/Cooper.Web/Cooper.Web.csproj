@@ -136,11 +136,13 @@
     <Compile Include="AliExtensions\FetchTasklistHelper.cs" />
     <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\BaseController.cs" />
-    <Compile Include="Controllers\FetchTasklistHelper.cs" />
+    <Compile Include="Controllers\FetchTaskHelper.cs" />
     <Compile Include="Controllers\Helper.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\IContextService.cs" />
     <Compile Include="Controllers\PersonalController.cs" />
+    <Compile Include="Controllers\TaskController.cs" />
+    <Compile Include="Controllers\TeamController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -149,6 +151,8 @@
   <ItemGroup>
     <Content Include="Content\ark\login-signin.png" />
     <Content Include="Content\ark\login.css" />
+    <Content Include="Content\angular\angular-1.0.1.min.js" />
+    <Content Include="Content\angular\angular-bootstrap-1.0.1.js" />
     <Content Include="Content\bootstrap\css\bootstrap.css" />
     <Content Include="Content\bootstrap\css\bootstrap.min.css" />
     <Content Include="Content\bootstrap\img\glyphicons-halflings-white.png" />
@@ -187,12 +191,23 @@
     <Content Include="Content\jquery\css\smoothness\images\ui-icons_888888_256x240.png" />
     <Content Include="Content\jquery\css\smoothness\images\ui-icons_cd0a0a_256x240.png" />
     <Content Include="Content\jquery\css\smoothness\jquery-ui-1.8.21.custom.css" />
+    <Content Include="Content\jquery\jquery-ui-1.8.22.custom.min.js" />
     <Content Include="Content\jquery\jquery.json-2.3.min.js" />
     <Content Include="Content\jquery\jquery.mobile-1.1.0.min.js" />
     <Content Include="Content\jquery\qunit-1.9.0.js" />
+    <Content Include="Content\js\handlebars-1.0.0.beta.6.js" />
     <Content Include="Global.asax" />
     <Content Include="Content\jquery\jquery-1.7.2.min.js" />
     <Content Include="Content\jquery\jquery-ui-1.8.21.custom.min.js" />
+    <Content Include="webui\controllers\TaskList.js" />
+    <Content Include="webui\modules\cooper.js" />
+    <Content Include="webui\controllers\Main.js" />
+    <Content Include="webui\task\detail.htm" />
+    <Content Include="webui\task\list.htm" />
+    <Content Include="webui\team\list.htm" />
+    <Content Include="webui\team\detail.htm" />
+    <Content Include="webui\index.htm" />
+    <Content Include="webui\left.htm" />
     <Content Include="Hybrid\jquery\css\mobile\images\ajax-loader.gif" />
     <Content Include="Hybrid\jquery\css\mobile\images\ajax-loader.png" />
     <Content Include="Hybrid\jquery\css\mobile\images\icons-18-black.png" />
@@ -202,8 +217,8 @@
     <Content Include="Hybrid\jquery\css\mobile\jquery.mobile-1.1.0.min.css" />
     <Content Include="Hybrid\jquery\css\mobile\jquery.mobile.structure-1.1.1.min.css" />
     <Content Include="Hybrid\jquery\jqm.page.params.js" />
+    <Content Include="Hybrid\jquery\jquery.cookie.js" />
     <Content Include="Hybrid\sample.htm" />
-    <Content Include="Hybrid\scripts\serverapis.js" />
     <Content Include="Hybrid\scripts\cordova-1.9.0.js" />
     <Content Include="Hybrid\scripts\hybrid.js" />
     <Content Include="Hybrid\setting.htm" />
@@ -243,6 +258,11 @@
     <Content Include="Hybrid\themes\images\icons-36-white.png" />
     <Content Include="Scripts\account.js" />
     <Content Include="Scripts\common.js" />
+    <Content Include="Scripts\task_bind_team.js" />
+    <Content Include="Scripts\taskpage.js" />
+    <Content Include="Scripts\task_row.js" />
+    <Content Include="Scripts\task_bind_shortcuts.js" />
+    <Content Include="Scripts\task_bind.js" />
     <Content Include="Scripts\tests.js" />
     <Content Include="Scripts\mobile.js" />
     <Content Include="Scripts\lang.js" />
@@ -258,7 +278,6 @@
     <Content Include="Views\Shared\Error.cshtml" />
     <Content Include="Views\Account\Login.cshtml" />
     <Content Include="Views\Shared\NotSupport.cshtml" />
-    <Content Include="Views\Personal\Mobile.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\Shared\_Layout_Account.cshtml" />
@@ -323,12 +342,6 @@
     <Content Include="Views\Shared\Settings.cshtml" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Views\Personal\MobileDetail.cshtml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Views\Shared\_Layout_Mobile.cshtml" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="Views\Shared\LeftBar.cshtml" />
   </ItemGroup>
   <ItemGroup>
@@ -347,9 +360,6 @@
     <Content Include="Views\Personal\MainRegion.cshtml" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Views\Personal\TemplateRegion.cshtml" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="README.md" />
     <Content Include="Views\Shared\ShareToRegion.cshtml" />
     <Content Include="Views\Account\ArkLogin.cshtml" />
@@ -357,6 +367,13 @@
   <ItemGroup>
     <Folder Include="Views\ali\" />
     <Content Include="Views\Home\Issues.cshtml" />
+    <Content Include="Views\Shared\Scripts_Team.cshtml" />
+    <Content Include="Views\Shared\Scripts.cshtml" />
+    <Content Include="Views\Shared\Style.cshtml" />
+    <Content Include="Views\Team\Index.cshtml" />
+    <Content Include="Views\Shared\TemplateRegion.cshtml" />
+    <Content Include="Views\Shared\Scripts_Personal.cshtml" />
+    <Content Include="Views\Shared\Scripts_Task.cshtml" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" />

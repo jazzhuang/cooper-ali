@@ -2,8 +2,6 @@
 
 using System;
 using System.Linq;
-using Cooper.Model.AddressBooks;
-using Cooper.Model.ContactGroups;
 using Cooper.Model.Contacts;
 using NUnit.Framework;
 

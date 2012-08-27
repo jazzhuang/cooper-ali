@@ -1,19 +1,18 @@
 ﻿//Copyright (c) CodeSharp.  All rights reserved. - http://www.icodesharp.com/
 
 using System;
-using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using NUnit.Framework;
+using System.Reflection;
+using System.Text;
 using CodeSharp.Core;
 using CodeSharp.Core.Castles;
-using System.Reflection;
-using Cooper.Model.Tasks;
 using CodeSharp.Core.Services;
 using Cooper.Model.Accounts;
-using Cooper.Model.AddressBooks;
-using Cooper.Model.ContactGroups;
 using Cooper.Model.Contacts;
+using Cooper.Model.Tasks;
+using Cooper.Model.Teams;
+using NUnit.Framework;
 
 namespace Cooper.Model.Test
 {
@@ -24,14 +23,16 @@ namespace Cooper.Model.Test
         protected static Random _rd = new Random();
         protected ILog _log;
         protected Castle.Facilities.NHibernateIntegration.ISessionManager _sessionManager;
-        protected ITaskService _taskService;
+        protected Cooper.Model.Tasks.ITaskService _taskService;
         protected IAccountService _accountService;
         protected IAccountConnectionService _accountConnectionService;
         protected IAccountHelper _accountHelper;
-        protected ITasklistService _tasklistService;
+        protected ITaskFolderService _taskFolderService;
         protected IAddressBookService _addressBookService;
         protected IContactGroupService _contactGroupService;
         protected IContactService _contactService;
+        protected ITeamService _teamService;
+        protected Cooper.Model.Teams.ITaskService _teamTaskService;
 
         [TestFixtureSetUp]
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestInitialize]
@@ -50,6 +51,7 @@ namespace Cooper.Model.Test
                 DependencyResolver.Resolve<ILockHelper>().Init<Account>();
                 DependencyResolver.Resolve<ILockHelper>().Init<GoogleConnection>();
                 DependencyResolver.Resolve<ILockHelper>().Init<GitHubConnection>();
+                DependencyResolver.Resolve<ILockHelper>().Init<Member>();
             }
             catch (Exception e)
             {
@@ -63,11 +65,13 @@ namespace Cooper.Model.Test
             this._accountHelper = DependencyResolver.Resolve<IAccountHelper>();
             this._accountService = DependencyResolver.Resolve<IAccountService>();
             this._accountConnectionService = DependencyResolver.Resolve<IAccountConnectionService>();
-            this._taskService = DependencyResolver.Resolve<ITaskService>();
-            this._tasklistService = DependencyResolver.Resolve<ITasklistService>();
+            this._taskService = DependencyResolver.Resolve<Cooper.Model.Tasks.ITaskService>();
+            this._taskFolderService = DependencyResolver.Resolve<ITaskFolderService>();
             this._addressBookService = DependencyResolver.Resolve<IAddressBookService>();
             this._contactGroupService = DependencyResolver.Resolve<IContactGroupService>();
             this._contactService = DependencyResolver.Resolve<IContactService>();
+            this._teamService = DependencyResolver.Resolve<ITeamService>();
+            this._teamTaskService = DependencyResolver.Resolve<Cooper.Model.Teams.ITaskService>();
         }
 
         protected virtual void Resolve(Castle.Windsor.IWindsorContainer windsor)
@@ -113,15 +117,33 @@ namespace Cooper.Model.Test
             this._accountService.Create(a);
             return a;
         }
-        protected PersonalTasklist CreatePersonalTasklist(Account a)
+        protected PersonalTaskFolder CreatePersonalTaskFolder(Account a)
         {
-            var list = new PersonalTasklist(this.RandomString(), a);
-            this._tasklistService.Create(list);
-            return list;
+            var folder = new PersonalTaskFolder(this.RandomString(), a);
+            this._taskFolderService.Create(folder);
+            return folder;
         }
         protected DateTime FormatTime(DateTime time)
         {
             return new DateTime(time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second);
+        }
+        protected Team CreateSampleTeam()
+        {
+            var team = new Team(this.RandomString());
+            this._teamService.Create(team);
+            return team;
+        }
+        protected Member AddSampleMemberToTeam(Team team)
+        {
+            return this._teamService.AddMember(RandomString(), RandomString(), team);
+        }
+        protected Member AddSampleMemberToTeam(Account associatedAccount, Team team)
+        {
+            return this._teamService.AddMember(RandomString(), RandomString(), team, associatedAccount);
+        }
+        protected Project AddSampleProjectToTeam(Team team)
+        {
+            return this._teamService.AddProject(this.RandomString(), team);
         }
     }
 }

@@ -14,7 +14,7 @@ namespace Cooper.Web.AliExtensions
     /// <summary>FetchTasklist辅助扩展，增加部分内部系统任务
     /// </summary>
     [CodeSharp.Core.Component]
-    public class FetchTasklistHelper : Cooper.Web.Controllers.FetchTasklistHelper, IFetchTasklistHelper
+    public class FetchTasklistHelper : Cooper.Web.Controllers.FetchTaskHelper, IFetchTaskHelper
     {
         private static CodeSharp.ServiceFramework.DefaultJSONSerializer _jsonHelper = new CodeSharp.ServiceFramework.DefaultJSONSerializer();
         private string _ali_api_user;
@@ -32,16 +32,16 @@ namespace Cooper.Web.AliExtensions
             this._ali_api_tasks = ali_api_tasks;
         }
 
-        public override bool IsFetchTasklist(string tasklistId)
+        public override bool IsFetchTaskFolder(string taskFolderId)
         {
-            return base.IsFetchTasklist(tasklistId)
-                || tasklistId == "ifree"
-                || tasklistId == "wf";
+            return base.IsFetchTaskFolder(taskFolderId)
+                || taskFolderId == "ifree"
+                || taskFolderId == "wf";
         }
 
-        public override IDictionary<string, string> GetFetchTasklists(Account account)
+        public override IDictionary<string, string> GetFetchTaskFolders(Account account)
         {
-            var dict = base.GetFetchTasklists(account);
+            var dict = base.GetFetchTaskFolders(account);
             var ark = this._connectionService.GetConnections(account).FirstOrDefault(o => o is ArkConnection);
             if (ark != null)
             {

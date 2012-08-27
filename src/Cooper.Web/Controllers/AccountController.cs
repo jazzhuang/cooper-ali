@@ -12,6 +12,7 @@ using Cooper.Model.Accounts;
 using CodeSharp.Core;
 using CodeSharp.Core.Services;
 using CodeSharp.Core.Utils;
+using System.Text.RegularExpressions;
 
 namespace Cooper.Web.Controllers
 {
@@ -175,12 +176,14 @@ namespace Cooper.Web.Controllers
             else
                 throw new CooperknownException(this.Lang().username_or_password_was_wrong);
 
-            return Request.IsAjaxRequest() ? Json(true) : this.Home();
+            return Request.IsAjaxRequest() ? Json(a.Name) : this.Home();
         }
         public ActionResult Logout()
         {
             FormsAuthentication.SignOut();
-            return RedirectToAction("Login");
+            if (Request.IsAjaxRequest())
+                return Json(true);
+            return this.RedirectToAction("Login");
         }
         #endregion
 
@@ -191,15 +194,19 @@ namespace Cooper.Web.Controllers
         /// <param name="code"></param>
         /// <param name="state">指定回调动作，login、connect</param>
         /// <param name="mobi">是否是来自mobi的回调请求</param>
+        /// <param name="joke">Joke? 将忽略joke请求</param>
         /// <returns></returns>
-        public ActionResult GoogleLogin(string error, string code, string state, string mobi)
+        public ActionResult GoogleLogin(string error, string code, string state, string mobi, string joke)
         {
+            //it's a joke?!
+            if (Convert.ToBoolean(joke))
+                return Json(false, JsonRequestBehavior.AllowGet);
+
             if (!string.IsNullOrWhiteSpace(error))
                 throw new CooperknownException(error);
 
-            var mobile = Convert.ToBoolean(mobi);
             //根据google回调获取对应google账号
-            var grant = this.GetGoogleGrantByCode(code, mobile);
+            var grant = this.GetGoogleGrantByCode(code);
             if (this._log.IsDebugEnabled) this._log.Debug(grant);
             var dict = _serializer.JsonDeserialize<IDictionary<string, string>>(grant);
             var email = this.GetGoogleAccount(dict["access_token"]);
@@ -209,7 +216,7 @@ namespace Cooper.Web.Controllers
             else if (state == "connect")
                 this.Connect<GoogleConnection>(email, grant);
 
-            return mobile
+            return Convert.ToBoolean(mobi)
                 ? Json(true, JsonRequestBehavior.AllowGet)
                 : this.StateResult(state);
         }
@@ -300,7 +307,7 @@ namespace Cooper.Web.Controllers
             return Url.ToPublicUrl(Url.Action("GoogleLogin"));
         }
         //格式如{ "access_token" : "", "token_type" : "Bearer", "expires_in" : 3600, "id_token" : "", "refresh_token" : "" }
-        private string GetGoogleGrantByCode(string code, bool mobi)
+        private string GetGoogleGrantByCode(string code)
         {
             //解决部分服务器证书问题
             ServicePointManager.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(delegate { return true; });
@@ -312,8 +319,8 @@ namespace Cooper.Web.Controllers
                 wc.Headers.Add("Content-Type", "application/x-www-form-urlencoded");
                 //登录后根据code获取token
                 var data = string.Format("client_id={0}&client_secret={1}&redirect_uri={2}&code={3}&grant_type=authorization_code"
-                    , mobi ? this._googleClientId_mobi : this._googleClientId
-                    , mobi ? this._googleClientSecret_mobi : this._googleClientSecret
+                    , this._googleClientId
+                    , this._googleClientSecret
                     , HttpUtility.UrlEncode(this.GetGoogleRedirectUrl())
                     , code);
                 if (this._log.IsDebugEnabled)

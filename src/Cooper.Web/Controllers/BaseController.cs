@@ -49,7 +49,6 @@ namespace Cooper.Web.Controllers
             base.OnActionExecuting(filterContext);
         }
 
-        public BaseController() { }
         public BaseController(ILoggerFactory factory)
         {
             this._log = factory.Create(typeof(BaseController));
@@ -59,7 +58,7 @@ namespace Cooper.Web.Controllers
         {
             return View("NotSupport");
         }
-        protected ActionResult Error(string error)
+        public ActionResult Error(string error)
         {
             ViewBag.Error = error;
             return View("Error");
