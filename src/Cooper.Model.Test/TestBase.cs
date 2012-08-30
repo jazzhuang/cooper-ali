@@ -24,6 +24,7 @@ namespace Cooper.Model.Test
         protected ILog _log;
         protected Castle.Facilities.NHibernateIntegration.ISessionManager _sessionManager;
         protected Cooper.Model.Tasks.ITaskService _taskService;
+        protected Cooper.Model.Tasks.IPersonalTaskService _personalTaskService;
         protected IAccountService _accountService;
         protected IAccountConnectionService _accountConnectionService;
         protected IAccountHelper _accountHelper;
@@ -71,6 +72,7 @@ namespace Cooper.Model.Test
             this._contactGroupService = DependencyResolver.Resolve<IContactGroupService>();
             this._contactService = DependencyResolver.Resolve<IContactService>();
             this._teamService = DependencyResolver.Resolve<ITeamService>();
+            this._personalTaskService = DependencyResolver.Resolve<Cooper.Model.Tasks.IPersonalTaskService>();
             this._teamTaskService = DependencyResolver.Resolve<Cooper.Model.Teams.ITaskService>();
         }
 
@@ -135,11 +137,11 @@ namespace Cooper.Model.Test
         }
         protected Member AddSampleMemberToTeam(Team team)
         {
-            return this._teamService.AddMember(RandomString(), RandomString(), team);
+            return this._teamService.AddFullMember(RandomString(), RandomString(), team);
         }
         protected Member AddSampleMemberToTeam(Account associatedAccount, Team team)
         {
-            return this._teamService.AddMember(RandomString(), RandomString(), team, associatedAccount);
+            return this._teamService.AddFullMember(RandomString(), RandomString(), team, associatedAccount);
         }
         protected Project AddSampleProjectToTeam(Team team)
         {

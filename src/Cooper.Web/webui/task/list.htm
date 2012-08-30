@@ -22,8 +22,8 @@
             <div class="btn-group pull-left" data-toggle="buttons-radio">
                 <button class="btn active flag_byPriority" title="{{lang.by_priority_title}}">
                     <i class="icon-time"></i>{{lang.priority}}</button>
-                <button class="btn flag_byAssignee" title="{{lang.by_assignee_title}}" ng-show="project!=null">
-                    <i class="icon-user"></i>{{lang.assignee}}</button>
+                <!--<button class="btn flag_byAssignee" title="{{lang.by_assignee_title}}" ng-show="project!=null">
+                    <i class="icon-user"></i>{{lang.assignee}}</button>-->
                 <button class="btn flag_byDueTime" title="{{lang.by_dueTime_title}}">
                     <i class="icon-bell"></i>{{lang.time}}</button>
             </div>
@@ -205,7 +205,7 @@
                                 {{lang.priority}}
                             </td>
                             <td class="detail-content">
-                                <div id="priority" class="btn-group" data-toggle="buttons-radio" title="@this.Lang().priority_title">
+                                <div id="priority" class="btn-group" data-toggle="buttons-radio" title="{{lang.priority_title}}">
                                     <button class="btn" title="" priority="0">
                                         <i class="icon-time" priority="0"></i>
                                     </button>
@@ -228,6 +228,29 @@
                             </td>
                         </tr>
                     </tbody>
+                </table>
+                <!--feed-->
+                <div class="feed">
+                    <div>{{lang.feed}}</div>
+                    <ul style="list-style:none;margin:0;padding:0">
+                        <li id="creator">xu huang 创建了任务 6-9</li>
+                    </ul>
+                </div>
+                <div class="split"></div>
+                <!--comment-->
+                <table ng-show="team!=null" class="comment">
+                    <tbody id="comments">
+                    </tbody>
+                    <tfoot ng-show="currentMember">
+                        <tr>
+                            <td class="comment-icon"></td>
+                            <td class="comment-content">
+                                <textarea id="comment_input"></textarea>
+                                <br />
+                                <button id="comment_btn" type="button" class="btn"><i class="icon-pencil"></i> {{lang.comment}}</button>
+                            </td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>

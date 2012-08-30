@@ -3,7 +3,7 @@
 </ul>
 <ul ng-show="currentMember" class="nav nav-tabs nav-stacked" style="margin-bottom:5px">
     <li class="{{activeClass(!project&&!member)}}"><a href="{{urls.team(team)}}"><i class="icon-inbox"></i> {{lang.my_team_task}}</a></li>
-    <li><a href="javascript:;"><i class="icon-envelope"></i> {{lang.inbox}}</a></li>
+    <li><a href="javascript:;" title="{{lang.comming_soon}}"><i class="icon-envelope"></i> {{lang.inbox}}</a></li>
 </ul>
 <div class="tabbable tabs-below">
     <div class="tab-content" style="background-color: #fff; border: 1px #ddd solid; border-bottom: 0;
@@ -12,7 +12,7 @@
             <ul class="nav nav-list">
                 <li class="nav-header" ng-click="addProject(lang.new_project_name)" ng-show="currentMember" style="cursor:pointer"><i class="icon-plus"></i>{{lang.add_project}}</li>
                 <li ng-repeat="p in team.projects" class="{{activeClass(p.id==project.id)}}">
-                    <a href="{{urls.project(team,p)}}" contenteditable="true">{{p.name}}</a>
+                    <a href="{{urls.project(team,p)}}" contenteditable="{{!ie7}}">{{p.name}}</a>
                 </li>
             </ul>
             <br />
@@ -20,7 +20,7 @@
         <div class="tab-pane {{activeClass(tab=='m')}}">
             <ul class="nav nav-list">
                 <li class="nav-header" ng-click="showMembers()" ng-show="currentMember" style="cursor:pointer"><i class="icon-plus"></i>{{lang.add_member}}</li>
-                <li ng-repeat="m in team.members" class="{{activeClass(m.id==member.id)}}"><a href="{{memberUrl(m)}}">{{m.name}}</a></li>
+                <li ng-repeat="m in team.members" class="{{activeClass(m.id==member.id||(!member&&currentMember&&m.id==currentMember.id))}}"><a href="{{memberUrl(m)}}">{{m.name}}</a></li>
             </ul>
             <br />
         </div>
@@ -69,8 +69,8 @@
                     </ul>
                     <form name="teamMembersForm" class="form-inline" ng-controller="TeamMembersFormCtrl">
                     <div class="well">
-                        <span class="control-group" ng-class="errorClass(teamMembersForm.email.$invalid)"><input name="email" type="email" maxlength="255" class="input-medium" placeholder="{{lang.email}}" ng-model="email" required /></span>
-                        <span class="control-group" ng-class="errorClass(teamMembersForm.name.$invalid)"><input name="name" type="text" maxlength="50" class="input-medium" placeholder="{{lang.nick}}" ng-model="name" required /></span>
+                        <span class="control-group input-prepend" ng-class="errorClass(teamMembersForm.email.$invalid)"><span class="add-on">{{lang.email}}</span><input name="email" type="email" maxlength="255" class="input-medium" placeholder="{{lang.email}}" ng-model="email" required /></span>
+                        <span class="control-group input-prepend" ng-class="errorClass(teamMembersForm.name.$invalid)"><span class="add-on">{{lang.nick}}</span><input name="name" type="text" maxlength="50" class="input-medium" placeholder="{{lang.nick}}" ng-model="name" required /></span>
                         <button ng-click="addMember()" class="btn">{{lang.send_invite}}</button>
                     </div>
                     <div class="alert alert-success hide"><i class="icon-ok"></i> {{lang.deal_success}}</div>

@@ -1,5 +1,8 @@
 ﻿//Copyright (c) CodeSharp.  All rights reserved. - http://www.icodesharp.com/
 
+//moment组件语言设置
+//moment.lang('zh-cn');
+
 //简易提供文案
 var lang = {};
 lang.work_in_cooper = 'WORK IN COOPER';
@@ -9,6 +12,7 @@ lang.today = '今天';
 lang.batch_task = '个任务';
 lang.archive = '归档';
 
+lang.comming_soon = '近期推出';
 lang.confirm_delete_taskFolder = '确定要删除当前任务表？任务表中的任务也将一起删除';
 lang.share_description = '\n\n - 我的任务 - Work IN Cooper';
 lang.remove_from_project = '移除该项目';
@@ -41,6 +45,10 @@ lang.member_name = '您在团队中的昵称：';
 lang.member_email = '您在团队中的邮箱：';
 lang.member_profile = '个人设置';
 lang.cancel = '取消';
+lang.comment = '评论';
+lang.comment_must_more_than_5 = '评论字数至少5个字符';
+lang.comment_must_less_than_500 = '评论字数不能超过500';
+lang.create_task = '创建了任务';
 
 lang.my_task = '个人任务';
 lang.my_profile = '我的设置';

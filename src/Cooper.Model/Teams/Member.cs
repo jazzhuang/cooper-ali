@@ -1,17 +1,14 @@
 ﻿//Copyright (c) CodeSharp.  All rights reserved. - http://www.icodesharp.com/
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using CodeSharp.Core.DomainBase;
 using Cooper.Model.Accounts;
 
 namespace Cooper.Model.Teams
 {
-    /// <summary>团队成员模型
+    /// <summary>团队成员抽象模型
     /// </summary>
-    public class Member : EntityBase<int>
+    public abstract class Member : EntityBase<int>
     {
         /// <summary>获取团队成员显示的名字
         /// </summary>
@@ -32,10 +29,23 @@ namespace Cooper.Model.Teams
         protected Member() { this.CreateTime = DateTime.Now; }
         internal Member(string name, string email, Team team) : this()
         {
+            Assert.IsValidKey(name);
+            Assert.IsValidKey(email);
             Assert.IsValid(team);
             this.SetName(name);
             this.SetEmail(email);
             this.TeamId = team.ID;
+        }
+        internal Member(string name, string email, Team team, Account associatedAccount) : this()
+        {
+            Assert.IsValidKey(name);
+            Assert.IsValidKey(email);
+            Assert.IsValid(team);
+            Assert.IsValid(associatedAccount);
+            this.SetName(name);
+            this.SetEmail(email);
+            this.TeamId = team.ID;
+            this.Associate(associatedAccount);
         }
 
         /// <summary>设置名称
@@ -80,6 +90,33 @@ namespace Cooper.Model.Teams
             {
                 this.AssociatedAccountId = null;
             }
+        }
+    }
+
+    /// <summary>拥有所有操作权限的团队成员模型
+    /// </summary>
+    public class FullMember : Member
+    {
+        protected FullMember() : base()
+        { }
+        internal FullMember(string name, string email, Team team) : base(name, email, team)
+        {
+        }
+        internal FullMember(string name, string email, Team team, Account associatedAccount) : base(name, email, team, associatedAccount)
+        {
+        }
+    }
+    /// <summary>团队宾客，也是团队成员，但只拥有查看操作或评论团队任务的操作
+    /// </summary>
+    public class GuestMember : Member
+    {
+        protected GuestMember() : base()
+        { }
+        internal GuestMember(string name, string email, Team team) : base(name, email, team)
+        {
+        }
+        internal GuestMember(string name, string email, Team team, Account associatedAccount) : base(name, email, team, associatedAccount)
+        {
         }
     }
 }

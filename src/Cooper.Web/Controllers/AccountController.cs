@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Web;
@@ -13,6 +14,7 @@ using CodeSharp.Core;
 using CodeSharp.Core.Services;
 using CodeSharp.Core.Utils;
 using System.Text.RegularExpressions;
+using Cooper.Model.Teams;
 
 namespace Cooper.Web.Controllers
 {
@@ -26,8 +28,9 @@ namespace Cooper.Web.Controllers
         protected IAccountHelper _accountHelper;
         protected IAccountService _accountService;
         protected IAccountConnectionService _accountConnectionService;
+        protected ITeamService _teamService;
         protected string _sysConfig_versionFlag;
-
+     
         private string _googleOAuth2Url;
         private string _googleOAuth2TokenUrl;
         private string _googleOAuth2UserUrl;
@@ -49,6 +52,9 @@ namespace Cooper.Web.Controllers
             , IAccountHelper accountHelper
             , IAccountService accountService
             , IAccountConnectionService accountConnectionService
+            
+            , ITeamService teamService
+
             , string sysConfig_versionFlag
 
             , string googleOAuth2Url
@@ -72,6 +78,8 @@ namespace Cooper.Web.Controllers
             this._accountHelper = accountHelper;
             this._accountService = accountService;
             this._accountConnectionService = accountConnectionService;
+
+            this._teamService = teamService;
 
             this._sysConfig_versionFlag = sysConfig_versionFlag;
 
@@ -264,6 +272,9 @@ namespace Cooper.Web.Controllers
             this._accountConnectionService.Update(c);
             //用于指示UI启动同步
             ViewBag.ConnectionId = c.ID;
+            //HACK:账号创建时自动关联一切可以关联的信息
+            if (flag)
+                this.AssociateEverything(c);
         }
         protected void Connect<T>(string name, string token) where T : AccountConnection
         {
@@ -276,9 +287,11 @@ namespace Cooper.Web.Controllers
                 throw new CooperknownException(string.Format(this.Lang().sorry_already_connect_another, name));
 
             if (typeof(T) == typeof(GoogleConnection))
-                this._accountConnectionService.Create(new GoogleConnection(name, token, a));
+                this._accountConnectionService.Create(c = new GoogleConnection(name, token, a));
             else if (typeof(T) == typeof(GitHubConnection))
-                this._accountConnectionService.Create(new GitHubConnection(name, token, a));
+                this._accountConnectionService.Create(c = new GitHubConnection(name, token, a));
+            //HACK:连接账号时自动关联一切可以关联的信息
+            this.AssociateEverything(c);
         }
         protected virtual void SetConnectionUrls(string state)
         {
@@ -288,6 +301,40 @@ namespace Cooper.Web.Controllers
         protected ActionResult StateResult(string state)
         {
             return View((string.IsNullOrWhiteSpace(state) ? "Login" : state) + "Success");
+        }
+        /// <summary>关联一切可以关联的信息，子类可在合适的时机调用此方法，目前包括TeamMember
+        /// </summary>
+        /// <param name="c"></param>
+        protected void AssociateEverything(AccountConnection c)
+        {
+            if (c == null) return;
+            var a = this._accountService.GetAccount(c.AccountId);
+            var email = this.ParseEmail(c);
+
+            //HACK:根据email建立关联TeamMember和Account关联
+            if (!string.IsNullOrWhiteSpace(email))
+                this._teamService.GetUnassociatedTeams(email).ToList().ForEach(o =>
+                {
+                    try { this._teamService.AssociateMemberAccount(o, o.GetMember(email), a); }
+                    catch (Exception e)
+                    {
+                        this._log.Error(string.Format("为账号#{0}邮箱{1}与团队#{2}|{3}创建关联时异常"
+                            , c.AccountId
+                            , email
+                            , o.ID
+                            , o.Name)
+                            , e);
+                    }
+                });
+            //其他...
+        }
+        /// <summary>根据账号连接获取Email信息，默认处理Google账号
+        /// </summary>
+        /// <param name="c"></param>
+        /// <returns></returns>
+        protected virtual string ParseEmail(AccountConnection c)
+        {
+            return c is GoogleConnection ? c.Name : null;
         }
 
         //问题参考：https://github.com/netshare/Cooper/issues/4

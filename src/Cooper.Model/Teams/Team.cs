@@ -43,6 +43,14 @@ namespace Cooper.Model.Teams
         {
             return _members.SingleOrDefault(x => x.ID == id);
         }
+        /// <summary>根据成员标识获取成员
+        /// </summary>
+        /// <param name="email"></param>
+        /// <returns></returns>
+        public Member GetMember(string email)
+        {
+            return _members.SingleOrDefault(x => x.Email == email);
+        }
         /// <summary>根据项目标识获取项目
         /// </summary>
         /// <param name="id"></param>
@@ -67,29 +75,17 @@ namespace Cooper.Model.Teams
         }
         /// <summary>往团队中添加一个新成员
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="email"></param>
+        /// <param name="member"></param>
         /// <returns></returns>
-        internal Member AddMember(string name, string email)
+        internal void AddMember(Member member)
         {
-            return AddMember(name, email, null);
-        }
-        /// <summary>往团队中添加一个新成员
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="email"></param>
-        /// <param name="account"></param>
-        /// <returns></returns>
-        internal Member AddMember(string name, string email, Account account)
-        {
-            Assert.IsFalse(_members.Any(x => x.Email == email));
-            var member = new Member(name, email, this);
-            if (account != null)
-            {
-                member.Associate(account);
-            }
+            Assert.IsNotNull(member);
+            Assert.IsValidKey(member.Email);
+            Assert.IsValidKey(member.Name);
+            Assert.AreEqual(this.ID, member.TeamId);
+            Assert.IsFalse(_members.Any(x => x.Email == member.Email));
+
             _members.Add(member);
-            return member;
         }
         /// <summary>从团队中移除一个成员
         /// </summary>

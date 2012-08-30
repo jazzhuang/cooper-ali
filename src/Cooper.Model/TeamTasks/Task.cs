@@ -18,6 +18,9 @@ namespace Cooper.Model.Teams
         /// <summary>获取所属团队的标识
         /// </summary>
         public int TeamId { get; private set; }
+        /// <summary>获取创建该团队任务的Member的标识
+        /// </summary>
+        public int CreatorMemberId { get; private set; }
         /// <summary>获取当前任务分配给的团队成员的标识
         /// <remarks>
         /// 团队任务是面向团队成员进行分配，而不是直接分配到账号
@@ -36,10 +39,11 @@ namespace Cooper.Model.Teams
 
         protected Task() : base()
         { }
-        public Task(Account creator, Team team) : base(creator)
+        public Task(Member creator, Team team) : base()
         {
             Assert.IsValid(creator);
             Assert.IsValid(team);
+            this.CreatorMemberId = creator.ID;
             this.TeamId = team.ID;
         }
 
@@ -49,13 +53,17 @@ namespace Cooper.Model.Teams
         {
             Assert.IsValid(member);
             Assert.AreEqual(this.TeamId, member.TeamId);
+            if (this.AssigneeId != null && this.AssigneeId.Value == member.ID) return;
             this.AssigneeId = member.ID;
+            this.MakeChange();
         }
         /// <summary>移除当前任务的Assignee
         /// </summary>
         public void RemoveAssignee()
         {
+            if (this.AssigneeId == null) return;
             this.AssigneeId = null;
+            this.MakeChange();
         }
         /// <summary>将任务添加到指定项目
         /// <remarks>
@@ -69,6 +77,7 @@ namespace Cooper.Model.Teams
             if (!_projects.Any(x => x.ID == project.ID))
             {
                 _projects.Add(project);
+                this.MakeChange();
             }
         }
         /// <summary>将任务从指定项目移除
@@ -84,6 +93,7 @@ namespace Cooper.Model.Teams
             if (projectToRemove != null)
             {
                 _projects.Remove(projectToRemove);
+                this.MakeChange();
             }
         }
         /// <summary>根据评论标识获取评论
@@ -98,11 +108,13 @@ namespace Cooper.Model.Teams
         /// </summary>
         /// <param name="creator"></param>
         /// <param name="body"></param>
-        public void AddComment(Account creator, string body)
+        public void AddComment(Member creator, string body)
         {
             Assert.IsValid(creator);
+            Assert.AreEqual(this.TeamId, creator.TeamId);
             Assert.IsNotNullOrWhiteSpace(body);
             _comments.Add(new Comment(creator, body));
+            this.MakeChange();
         }
         /// <summary>移除评论
         /// </summary>
@@ -114,6 +126,7 @@ namespace Cooper.Model.Teams
             if (commentToRemove != null)
             {
                 _comments.Remove(commentToRemove);
+                this.MakeChange();
             }
         }
     }

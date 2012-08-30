@@ -65,6 +65,9 @@ namespace Cooper.Web.Controllers
                 t.ID = o.ID.ToString();
                 t.Subject = o.Subject;
                 t.Body = o.Body;
+                //UNDONE:UTC时间按当前时区格式化
+                t.CreateTime = o.CreateTime.ToString("yyyy-MM-dd HH:mm:ss");
+                //HACK:DueTime格式化按Date.ToString("yyyy-MM-dd")精度到天
                 t.DueTime = o.DueTime.HasValue ? o.DueTime.Value.Date.ToString("yyyy-MM-dd") : null;
                 t.Priority = (int)o.Priority;
                 t.IsCompleted = o.IsCompleted;
@@ -126,6 +129,7 @@ namespace Cooper.Web.Controllers
             , string by
             , string sorts
             , Func<Task> ifNew
+            , Action<Task> verify
             , Func<bool> isPersonalSorts
             , Func<string, string> getSortKey
             , Action<string> saveSorts)
@@ -137,7 +141,7 @@ namespace Cooper.Web.Controllers
             var list = _serializer.JsonDeserialize<ChangeLog[]>(changes);
             var idChanges = new Dictionary<string, string>();//old,new
             //同步变更
-            this.ApplyChanges(account, list, idChanges, ifNew);
+            this.ApplyChanges(account, list, idChanges, ifNew, verify);
             //同步排序数据
             this.UpdateSorts(account, by, sorts, idChanges, isPersonalSorts, getSortKey, saveSorts);
             //返回修正记录
@@ -165,7 +169,8 @@ namespace Cooper.Web.Controllers
         private void ApplyChanges(Account account
             , ChangeLog[] list
             , IDictionary<string, string> idChanges
-            , Func<Task> ifNew)
+            , Func<Task> ifNew
+            , Action<Task> verify)
         {
             foreach (var c in list)
             {
@@ -193,6 +198,17 @@ namespace Cooper.Web.Controllers
                         continue;
                     }
 
+                    //执行变更权限验证
+                    verify(t);
+
+                    //UNDONE:根据最后更新时间判断变更记录有效性，时间间隔过长的变更会被丢弃?
+                    //由于LastUpdateTime粒度过大，不适合这种细粒度变更比对，需要引入Merge机制来处理文本更新合并问题
+                    DateTime createTime;
+                    if (DateTime.TryParse(c.CreateTime, out createTime))
+                        if (t.LastUpdateTime - createTime > TimeSpan.FromMinutes(5))
+                            if (this._log.IsInfoEnabled)
+                                this._log.InfoFormat("变更创建时间{0}与任务最后更新时间{1}的隔间过长", c.CreateTime, t.LastUpdateTime);
+                    
                     if (this.IsTaskDelete(c))
                         this._taskService.Delete(t);
                     else
@@ -201,7 +217,7 @@ namespace Cooper.Web.Controllers
                         this._taskService.Update(t);
                     }
                     if (this._log.IsInfoEnabled)
-                        this._log.InfoFormat("为任务#{0}执行变更{1}|{2}|{3}|{4}", t.ID, c.Type, c.ID, c.Name, c.Value);
+                        this._log.InfoFormat("为任务#{0}执行变更{1}|{2}|{3}|{4}|{5}", t.ID, c.Type, c.ID, c.Name, c.Value, c.CreateTime);
                 }
                 catch (Exception e)
                 {
@@ -290,6 +306,9 @@ namespace Cooper.Web.Controllers
     /// </summary>
     public class TaskInfo
     {
+        /// <summary>创建时间
+        /// </summary>
+        public string CreateTime { get; set; }
         /// <summary>标识，临时标识用temp_前缀
         /// </summary>
         public string ID { get; set; }
@@ -333,6 +352,9 @@ namespace Cooper.Web.Controllers
         /// <summary>变更后属性的值
         /// </summary>
         public string Value { get; set; }
+        /// <summary>变更记录 UTC字符串，如 Tue, 28 Aug 2012 07:17:42 GMT
+        /// </summary>
+        public string CreateTime { get; set; }
     }
     /// <summary>描述数据变更类型
     /// </summary>

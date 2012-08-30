@@ -10,7 +10,8 @@ using Teams=Cooper.Model.Teams;
 
 namespace Cooper.Web.Controllers
 {
-    //团队
+    /// <summary>团队
+    /// </summary>
     public class TeamController : TaskController
     {
         private Teams.ITeamService _teamService;
@@ -100,7 +101,7 @@ namespace Cooper.Web.Controllers
         }
         #endregion
 
-        #region 团队相关api
+        #region 团队相关api 只有团队FullMember可执行变更操作
         [HttpGet]
         public ActionResult GetTeams()
         {
@@ -114,7 +115,7 @@ namespace Cooper.Web.Controllers
             this._teamService.Create(t);
 
             //HACK:创建team同时将当前用户加入到该team
-            var m = this._teamService.AddMember(
+            var m = this._teamService.AddFullMember(
                 !string.IsNullOrWhiteSpace(memberName) ? memberName : a.Name
                 , !string.IsNullOrWhiteSpace(memberEmail) ? memberEmail : memberEmail
                 , t, a);
@@ -123,7 +124,7 @@ namespace Cooper.Web.Controllers
         [HttpPut]
         public ActionResult UpdateTeam(string id, string name)
         {
-            var t = this.GetTeamOfCurrentAccount(id);
+            var t = this.GetTeamOfFullMember(id);
             t.SetName(name);
             this._teamService.Update(t);
             return Json(true);
@@ -131,12 +132,12 @@ namespace Cooper.Web.Controllers
         [HttpPost]
         public ActionResult CreateProject(string teamId, string name)
         {
-            return Json(this._teamService.AddProject(name, this.GetTeam(teamId)).ID);
+            return Json(this._teamService.AddProject(name, this.GetTeamOfFullMember(teamId)).ID);
         }
         [HttpPut]
         public ActionResult UpdateProject(string teamId, string projectId, string name)
         {
-            var t = this.GetTeam(teamId);
+            var t = this.GetTeamOfFullMember(teamId);
             var p = this.GetProject(t, projectId);
             p.SetName(name);
             this._teamService.Update(t);
@@ -145,7 +146,7 @@ namespace Cooper.Web.Controllers
         [HttpPost]
         public ActionResult DeleteProject(string teamId, string projectId)
         {
-            var t = this.GetTeam(teamId);
+            var t = this.GetTeamOfFullMember(teamId);
             var p = this.GetProject(t, projectId);
             this._teamService.RemoveProject(p, t);
             return Json(true);
@@ -153,12 +154,19 @@ namespace Cooper.Web.Controllers
         [HttpPost]
         public ActionResult CreateMember(string teamId, string name, string email)
         {
-            return Json(this._teamService.AddMember(name, email, this.GetTeam(teamId)).ID);
+            //HACK:创建Member时自动根据Email获取账号进行关联
+            var c = this.GetDefaultConnectionByEmail(email);
+            var a = c != null
+                ? this._accountService.GetAccount(c.AccountId)
+                : null;
+            return Json(a != null
+                ? this._teamService.AddFullMember(name, email, this.GetTeamOfFullMember(teamId), a).ID
+                : this._teamService.AddFullMember(name, email, this.GetTeamOfFullMember(teamId)).ID);
         }
         [HttpPost]//[HttpDelete]//需要路由支持 team/{teamId}/member/{memberId}
         public ActionResult DeleteMember(string teamId, string memberId)
         {
-            var t = this.GetTeam(teamId);
+            var t = this.GetTeamOfFullMember(teamId);
             var m = this.GetMember(t, memberId);
             this._teamService.RemoveMember(m, t);
             return Json(true);
@@ -178,19 +186,27 @@ namespace Cooper.Web.Controllers
         [ValidateInput(false)]
         public ActionResult Sync(string teamId, string projectId, string memberId, string changes, string by, string sorts)
         {
+            var a = this.Context.Current;
             var team = this.GetTeamOfCurrentAccount(teamId);
             var project = string.IsNullOrWhiteSpace(projectId) ? null : this.GetProject(team, projectId);
             var member = string.IsNullOrWhiteSpace(memberId) ? null : this.GetMember(team, memberId);
+            var currentMember = this.GetCurrentMember(team);
 
             return Json(this.Sync(changes, by, sorts
                 , () =>
                 {
-                    var t = new Teams.Task(this.Context.Current, team);
+                    var t = new Teams.Task(currentMember, team);
                     if (project != null)
                         t.AddToProject(project);
                     if (member != null)
                         t.AssignTo(member);
                     return t;
+                }
+                , o =>
+                {
+                    var task = o as Teams.Task;
+                    //创建者或执行人
+                    Assert.IsTrue(this.IsCreator(team, task, a) || this.IsAssignee(task, currentMember));
                 }
                 , () => project == null && string.IsNullOrWhiteSpace(memberId)
                 , o => this.GetSortKey(team, o)
@@ -209,7 +225,7 @@ namespace Cooper.Web.Controllers
             base.ApplyUpdate(t, c);
 
             var teamTask = t as Teams.Task;
-            var team = this.GetTeam(teamTask.TeamId);
+            var team = this.GetTeamOfCurrentAccount<Teams.Member>(teamTask.TeamId);//普通成员即可
 
             switch (c.Name.ToLower())
             {
@@ -226,33 +242,56 @@ namespace Cooper.Web.Controllers
                     else if (c.Type == ChangeType.Delete)
                         teamTask.RemoveFromProject(p);
                     break;
+                case "comments":
+                    if (c.Type == ChangeType.Insert)
+                        teamTask.AddComment(this.GetCurrentMember(team), c.Value);
+                    //UNDONE:目前暂不支持删除评论
+                    break;
             }
         }
 
-        /// <summary>转换客户端在团队模块中使用的账号信息，可重载定制Name和Email，默认取Google连接信息
+        /// <summary>根据Email获取默认账号连接，用于Email与账号间的关联依据，默认取Google连接
+        /// </summary>
+        /// <param name="email"></param>
+        /// <returns></returns>
+        protected virtual AccountConnection GetDefaultConnectionByEmail(string email)
+        {
+            return this._accountConnectionService.GetConnection<GoogleConnection>(email);
+        }
+        /// <summary>根据账号获取默认Email信息，默认取Google连接
         /// </summary>
         /// <param name="a"></param>
         /// <returns></returns>
-        protected virtual AccountInfo Parse(Account a)
+        protected virtual string GetDefaultEmail(Account a)
         {
             var google = this._accountConnectionService
                 .GetConnections(a)
                 .FirstOrDefault(o => o is GoogleConnection) as GoogleConnection;
-            return new AccountInfo()
-            {
-                ID = a.ID.ToString(),
-                Name = a.Name,
-                Email = google != null ? google.Name : string.Empty
-            };
+            return google != null ? google.Name : null;
         }
 
+        //获取当前用户所在的team
         private Teams.Team GetTeamOfCurrentAccount(string teamId)
         {
-            var t = this.GetTeam(teamId);
-            if (!this.IsTeamOfCurrentAccount(t))
+            int id;
+            int.TryParse(teamId, out id);
+            return this.GetTeamOfCurrentAccount<Teams.Member>(id);
+        }
+        //获取当前用户以FullMember身份所在的team
+        private Teams.Team GetTeamOfFullMember(string teamId)
+        {
+            int id;
+            int.TryParse(teamId, out id);
+            return this.GetTeamOfCurrentAccount<Teams.FullMember>(id);
+        }
+        private Teams.Team GetTeamOfCurrentAccount<T>(int teamId) where T : Teams.Member
+        {
+            var t = this.GetTeam(teamId);//权限在之后验证
+            if (!this.IsTeamOfCurrentAccount<T>(t))
                 throw new CooperknownException(this.Lang().you_are_not_the_member_of_team);
             return t;
         }
+        //GetTeam未作权限控制，少数匿名场景使用
         private Teams.Team GetTeam(string teamId)
         {
             int id;
@@ -279,18 +318,54 @@ namespace Cooper.Web.Controllers
         private Teams.Member GetMember(Teams.Team team, string memberId)
         {
             int id;
-            var m = int.TryParse(memberId, out id) ? team.GetMember(id) : null;
+            int.TryParse(memberId, out id);
+            return this.GetMember(team, id);
+        }
+        private Teams.Member GetMember(Teams.Team team, int memberId)
+        {
+            var m = team.GetMember(memberId);
             if (m == null)
                 throw new CooperknownException(this.Lang().member_not_found);
             if (m.TeamId != team.ID)
                 throw new CooperknownException(this.Lang().member_not_match_team);
             return m;
         }
+        //获取当前用户对应的成员信息
+        private Teams.Member GetCurrentMember(Teams.Team team)
+        {
+            var m = team.Members.FirstOrDefault(o =>
+                o.AssociatedAccountId.HasValue && o.AssociatedAccountId.Value == this.Context.Current.ID);
+            if (m == null)
+                throw new CooperknownException(this.Lang().you_are_not_the_member_of_team);
+            return m;
+        }
+        //判断当前用户是否是指定团队的成员
         private bool IsTeamOfCurrentAccount(Teams.Team team)
+        {
+            return this.IsTeamOfCurrentAccount<Teams.Member>(team);
+        }
+        private bool IsTeamOfCurrentAccount<T>(Teams.Team team) where T : Teams.Member
         {
             var a = this.Context.Current;
             return team.Members.Any(o =>
-                o.AssociatedAccountId.HasValue && o.AssociatedAccountId == a.ID);
+                o.AssociatedAccountId.HasValue && o.AssociatedAccountId == a.ID && o is T);
+        }
+        private bool IsCreator(Teams.Team team, Teams.Task task, Account a)
+        {
+            var m = team.GetMember(task.CreatorMemberId);
+            //UNDONE:由于Member可能被删除，teamtask可能找不到创建者？
+            if (m == null || !m.AssociatedAccountId.HasValue)
+                return false;
+            var account = _accountService.GetAccount(m.AssociatedAccountId.Value);
+            return account != null && account.ID == a.ID;
+        }
+        private bool IsAssignee(TeamTaskInfo task, Account a)
+        {
+            return task.Assignee != null && task.Assignee.accountId == a.ID.ToString();
+        }
+        private bool IsAssignee(Teams.Task task, Teams.Member member)
+        {
+            return task.AssigneeId.HasValue && task.AssigneeId == member.ID;
         }
         private IEnumerable<Teams.Task> GetTasksByAccount(Teams.Team team, Account account)
         {
@@ -344,6 +419,15 @@ namespace Cooper.Web.Controllers
                 accountId = member.AssociatedAccountId.HasValue ? member.AssociatedAccountId.Value.ToString() : null
             };
         }
+        private TeamTaskCommentInfo Parse(Teams.Comment comment)
+        {
+            return new TeamTaskCommentInfo()
+            {
+                body = comment.Body,
+                creator = this.Parse(comment.Creator),
+                createTime = comment.CreateTime.ToString("yyyy-MM-dd HH:mm:ss")
+            };
+        }
         private TeamTaskInfo[] Parse(IEnumerable<Teams.Task> tasks, Teams.Team team)
         {
             var a = this.Context.Current;
@@ -353,6 +437,9 @@ namespace Cooper.Web.Controllers
             {
                 var teamTask = task as Teams.Task;
                 var teamTaskInfo = taskInfo as TeamTaskInfo;
+                //创建人
+                if ((m = team.GetMember(teamTask.CreatorMemberId)) != null)
+                    teamTaskInfo.Creator = this.Parse(m);
                 //执行人
                 if (teamTask.AssigneeId.HasValue
                     && (m = team.GetMember(teamTask.AssigneeId.Value)) != null)
@@ -360,13 +447,26 @@ namespace Cooper.Web.Controllers
                 //项目列表
                 teamTaskInfo.Projects = teamTask.Projects.Select(o => this.Parse(o)).ToArray();
                 //是否可编辑 创建者或被分配者（执行人）
-                teamTaskInfo.Editable = teamTask.CreatorAccountId == a.ID
-                    || (teamTaskInfo.Assignee != null
-                    && teamTaskInfo.Assignee.accountId == a.ID.ToString());
+                teamTaskInfo.Editable = this.IsCreator(team, teamTask, a) || this.IsAssignee(teamTaskInfo, a);
+                //评论
+                teamTaskInfo.Comments = teamTask.Comments.Select(o => this.Parse(o)).ToArray();
             }, tasks.Select(o => o as Task)
             .ToArray())
             .Select(o => o as TeamTaskInfo)
             .ToArray();
+        }
+        /// <summary>转换客户端在团队模块中使用的账号信息，可重载定制Name和Email，默认取Google连接信息
+        /// </summary>
+        /// <param name="a"></param>
+        /// <returns></returns>
+        private AccountInfo Parse(Account a)
+        {
+            return new AccountInfo()
+            {
+                ID = a.ID.ToString(),
+                Name = a.Name,
+                Email = this.GetDefaultEmail(a) ?? string.Empty
+            };
         }
 
         private ActionResult GetBy(string teamId
@@ -378,8 +478,8 @@ namespace Cooper.Web.Controllers
             , Func<Account, Teams.Team, TaskInfo[], Sort[]> sortsOfAccount//获取用户在指定team的排序信息
             , Func<Teams.Project, TaskInfo[], Sort[]> sortsOfProject)//获取项目的排序信息
         {
-            var current = this.Context.Current;
-            var team = this.GetTeam(teamId);
+            var a = this.Context.Current;
+            var team = this.GetTeam(teamId);//允许匿名访问
             var project = !string.IsNullOrWhiteSpace(projectId)
                 ? this.GetProject(team, projectId)
                 : null;
@@ -410,12 +510,12 @@ namespace Cooper.Web.Controllers
                         .GetAccount(member.AssociatedAccountId.Value), team, tasks);
                 }
                 else
-                    sorts = sortsOfAccount(current, team, tasks);
+                    sorts = sortsOfAccount(a, team, tasks);
             }
             else
             {
-                tasks = this.Parse(taskByAccount(team, current), team);
-                sorts = sortsOfAccount(current, team, tasks);
+                tasks = this.Parse(taskByAccount(team, a), team);
+                sorts = sortsOfAccount(a, team, tasks);
             }
 
             return Json(new
@@ -486,9 +586,21 @@ namespace Cooper.Web.Controllers
     }
     public class TeamTaskInfo : TaskInfo
     {
+        public TeamMemberInfo Creator { get; set; }
         public TeamMemberInfo Assignee { get; set; }
         public TeamProjectInfo[] Projects { get; set; }
+        public TeamTaskCommentInfo[] Comments { get; set; }
         public TeamTaskInfo() : base() { }
+    }
+    /// <summary>团队任务评论信息
+    /// </summary>
+    public class TeamTaskCommentInfo
+    {
+        public TeamMemberInfo creator { get; set; }
+        public string body { get; set; }
+        /// <summary>格式yyyy-MM-dd HH:mm:ss
+        /// </summary>
+        public string createTime { get; set; }
     }
     #endregion
 }

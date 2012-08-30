@@ -19,6 +19,13 @@ namespace Cooper.Repositories
                 .Add(Expression.Eq("members.AssociatedAccountId", account.ID))
                 .List<Team>();
         }
+        public IEnumerable<Team> FindBy(string name)
+        {
+            return this.GetSession()
+                .CreateCriteria<Team>()
+                .Add(Expression.Eq("Name", name))
+                .List<Team>();
+        }
         public Member FindMemberBy(Team team, string email)
         {
             return this.GetSession()
@@ -34,6 +41,15 @@ namespace Cooper.Repositories
                 .Add(Expression.Eq("TeamId", team.ID))
                 .Add(Expression.Eq("AssociatedAccountId", account.ID))
                 .UniqueResult<Member>();
+        }
+        public IEnumerable<Team> FindUnassociatedTeamsBy(string email)
+        {
+            return this.GetSession()
+                .CreateCriteria<Team>()
+                .CreateAlias("Members", "members")
+                .Add(Expression.IsNull("members.AssociatedAccountId"))
+                .Add(Expression.Eq("members.Email", email))
+                .List<Team>();
         }
     }
 }

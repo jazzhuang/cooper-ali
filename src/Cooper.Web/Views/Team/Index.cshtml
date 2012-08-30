@@ -1,12 +1,21 @@
 ﻿@{ 
     Layout = null;
     var account = ViewBag.Account;
+    var ie7 = Convert.ToBoolean(ViewBag.IsIE7);//用于解决少量无法在js中处理的兼容问题
 }
 <!DOCTYPE html>
 <html class="ng-app:cooper" id="ng-app" ng-app="cooper">
 <head>
     <meta charset="utf-8" />
+    @if (ie7)
+    {
+    <title>@this.Lang().myteam @this.Suffix()</title>
+    }
+    else
+    { 
     <title>{{title}} {{lang.suffix}}</title>
+    }
+
     <meta name="fragment" content="!" />
     <base href="/team" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,13 +41,13 @@
                 @Html.Raw(File.ReadAllText(Server.MapPath("~/webui/task/detail.htm")))
             </div>
         </div>
-        <div id="cover" class="modal-backdrop in" style="background:#ebebeb url('../Hybrid/images/bg-line.png') repeat;">
-            <div class="progress progress-striped active" style="width:400px; margin:auto; margin-top:200px;">
+        <div id="cover" class="modal-backdrop in" style="background: #ebebeb url('../Hybrid/images/bg-line.png') repeat;">
+            <div class="progress progress-striped active" style="width: 400px; margin: auto;
+                margin-top: 200px;">
                 <div class="bar" style="width: 100%;">@this.Lang().loading</div>
             </div>
         </div>
     </div>
-    
     <!--share box-->
     <div class="modal hide" id="shareModal">
         <div class="modal-header">
@@ -49,18 +58,16 @@
         </div>
         <div class="modal-body">
             <form class="well form-search well">
-                <div class="control-group">
-                    <textarea id="share_title" style="width:80%; height:150px"></textarea>
-                </div>
-                <div class="control-group">
-                    @{ Html.RenderPartial("ShareToRegion"); }
-                </div>
+            <div class="control-group">
+                <textarea id="share_title" style="width: 80%; height: 150px"></textarea>
+            </div>
+            <div class="control-group">
+                @{ Html.RenderPartial("ShareToRegion"); }
+            </div>
             </form>
         </div>
     </div>
-
     @{ Html.RenderSettings(); }
-    
     <script type="text/javascript">
         var url_root = '@Url.Content("~")';
         url_root = url_root == '/' ? '' : url_root;
@@ -70,9 +77,7 @@
         var currentMemberId = '@ViewBag.MemberId';
         var currentAccount={ id:@account.ID,name:'@account.Name',email:'@account.Email' };
     </script>
-
     @{ Html.RenderPartial("Scripts_Team"); }
-
     <script type="text/javascript">
         function resize() {
             $('.todolist_wrapper').height($(window).height() - 170);

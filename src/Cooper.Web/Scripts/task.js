@@ -2,6 +2,7 @@
 
 ///<reference path="lang.js" />
 ///<reference path="common.js" />
+///<reference path="../Content/js/moment.min.js" />
 
 var identity = 0;
 //描述任务缓存项
@@ -18,20 +19,39 @@ Task.prototype = {
             'id': t['ID'] != undefined ? t['ID'].toString() : 'temp_' + (++identity) + '_' + new Date().getTime(), //可自动构建临时id 总是以string使用
             'subject': t['Subject'] != undefined ? t['Subject'] : '',
             'body': t['Body'] != undefined ? t['Body'] : '',
+            'createTime': t['CreateTime'] || t['createTime'],
             'priority': t['Priority'] != undefined ? t['Priority'] : 0, //0=today 1=upcoming 2=later priority 总是以string使用
             'dueTime': t['DueTime'] != undefined && t['DueTime'] != null && t['DueTime'] != '' ? this._parseDate(t['DueTime']) : null,
             'isCompleted': t['IsCompleted'] != undefined ? t['IsCompleted'] : false,
             'tags': [],
             //team模块相关
-            'assignee': t['Assignee'] != undefined ? { 'id': t['Assignee']['ID'] || t['Assignee']['id'], 'name': t['Assignee']['Name'] || t['Assignee']['name']} : null,
+            //TODO:移植到扩展模块？
+            'creator': t['Creator'] != undefined ? this._mapMember(t['Creator']) : null,
+            'assignee': t['Assignee'] != undefined ? this._mapMember(t['Assignee']) : null,
             'assigneeId': t['Assignee'] ? t['Assignee']['ID'] || t['Assignee']['id'] : null,
-            'projects': t['Projects'] ? $.map(t['Projects'], function (n) { return { 'id': n['ID'] || n['id'], 'name': n['Name'] || n['name'] }; }) : []
+            'projects': t['Projects'] ? $.map(t['Projects'], function (n) { return { 'id': n['ID'] || n['id'], 'name': n['Name'] || n['name'] }; }) : [],
+            'comments': t['Comments'] ? $.map(t['Comments'], this._mapComment) : []
         }
         this.$el_row = this._generateItem(this['data']);
         this.$el_detail = null;
 
         if (debuger.isDebugEnable)
             this._getRowEl('subject').attr('placeholder', '#' + this.id());
+    },
+    _mapMember: function (n) {
+        return {
+            'id': n['ID'] || n['id'],
+            'name': n['Name'] || n['name'],
+            'email': n['Email'] || n['email']
+        };
+    },
+    _mapComment: function (n) {
+        return {
+            'id': n['ID'] || n['id'],
+            'body': n['Body'] || n['body'],
+            'createTime': n['CreateTime'] || n['createTime'],
+            'creator': n['Creator'] || n['creator']//TODO:调整到_mapMember?或只提供creatorid
+        };
     },
     _generateItem: function (d) { return $(render($('#tmp_region tbody').html(), d)); },
     _generateDetail: function (d) { d.dueTimeId = 'dueTime'; return $(render($('#tmp_detail').html(), d)); },
@@ -59,19 +79,22 @@ Task.prototype = {
             str[i] = a[i][n];
         return str.join(s);
     },
-    _addDeleteChange: function (k, i) {
-        this._addChange(k + i, { 'Name': k, 'Value': i, 'Type': 1 });
+    _addDeleteChange: function (k, i, b) {
+        this._addChange(k + i, { 'Name': k, 'Value': i, 'Type': 1 }, b);
     },
-    _addInsertChange: function (k, i) {
-        this._addChange(k + i, { 'Name': k, 'Value': i, 'Type': 2 });
+    _addInsertChange: function (k, i, b) {
+        this._addChange(k + i, { 'Name': k, 'Value': i, 'Type': 2 }, b);
     },
-    _addChange: function (k, c) {
+    _addChange: function (k, c, b) {
         c['ID'] = this.id();
         //变更列表，用于提交到server
         if (!this.changes)
             this.changes = {};
+        if (!this.editable && !b) return;
         //只记录最后一次
         this.changes[k] = c;
+        //统一增加时间戳
+        this.changes[k]['CreateTime'] = new Date().toUTCString();
         debuger.info('new changelog for ' + k + ' of task#' + this.id(), this.changes[k]);
     },
     ///////////////////////////////////////////////////////////////////////////////
@@ -80,25 +103,27 @@ Task.prototype = {
         this.setPriority(this.priority());
         this.setDueTime(this.due());
         this.setAssignee(this.assignee());
+        this.setEditable(this.editable);
     },
     renderDetail: function () {
         if (!this.$el_detail)
             this.$el_detail = this._generateDetail(this['data']);
-        if (this.editable) {
-            //部分事件如blur无法全局因此在此执行一些额外的rebind
-            if (this.bind_detail)
-                this.bind_detail(this.$el_detail, this);
-            if (this.bind_detail_team)
-                this.bind_detail_team(this.$el_detail, this);
-        }
+        //部分事件如blur无法全局因此在此执行一些额外的rebind
+        if (this.bind_detail)
+            this.bind_detail(this.$el_detail, this);
+        if (this.bind_detail_team)
+            this.bind_detail_team(this.$el_detail, this);
         //设置值
         this.setDetail_Completed(this.isCompleted());
         this.setDetail_Subject(this.subject());
         this.setDetail_Priority(this.priority());
         this.setDetail_DueTime(this.due());
         this.setDetail_Body(this.body());
+        this.setDetail_Creator(this.creator());
         this.setDetail_Assignee(this.assignee());
         this.setDetail_Projects(this.projects());
+        this.setDetail_Comments(this.comments());
+        this.setDetail_Editable(this.editable);
         //设置url快捷链接区域 临时方案
         var $urls = this.$el_detail.find('#urls');
         $urls.find('ul').empty();
@@ -131,7 +156,6 @@ Task.prototype = {
     },
     get: function (k) { return this['data'][k]; },
     update: function (k, v) {
-        if (!this.editable) return;
         if (this['data'][k] == v) return false;
         this['data'][k] = v;
         this._addChange(k, { 'Name': k, 'Value': v });
@@ -160,8 +184,11 @@ Task.prototype = {
     due: function () { return this.get('dueTime'); },
     subject: function () { return this.get('subject'); },
     body: function () { return this.get('body'); },
+    createTime: function () { return this.get('createTime'); },
+    creator: function () { return this.get('creator'); },
     assignee: function () { return this.get('assignee'); },
     projects: function () { return this.get('projects'); },
+    comments: function () { return this.get('comments'); },
     ///////////////////////////////////////////////////////////////////////////////
     //属性以及ui设置
     setId: function (i) {
@@ -218,6 +245,15 @@ Task.prototype = {
         this._setClass($e, today >= date, 'cell_duetime_expired');
         this.setDetail_DueTime(t);
     },
+    setEditable: function (b) {
+        this.editable = b;
+        //使用keyup来屏蔽变更
+        //设置readonly会导致del事件无法在list区域处理的问题
+        if (!this.editable)
+            this._getRowEl('subject').css('cursor', 'not-allowed');
+        //.attr('readonly', !this.editable);
+        this.setDetail_Editable(b);
+    },
     setAssignee: function (u) {
         var k = 'assignee';
         this.update(k + 'Id', u ? u['id'] : null); //只更新assigneeId
@@ -238,6 +274,18 @@ Task.prototype = {
     removeProject: function (p) {
         this._addDeleteChange('projects', p);
         this.setProjects($.grep(this.projects(), function (n, i) { return n['id'] != p; }));
+    },
+    setComments: function (cs) {
+        if (!cs) return;
+        this['data']['comments'] = cs; //直接更新comments数组
+        this.setDetail_Comments(cs);
+    },
+    addComment: function (body) {
+        this._addInsertChange('comments', body, true);
+        this.setComments($.merge(this.comments(), [{
+            body: body,
+            createTime: moment().format('YYYY-MM-DD HH:mm:ss')
+        }]));
     },
     ///////////////////////////////////////////////////////////////////////////////
     //detail设置
@@ -281,6 +329,13 @@ Task.prototype = {
         if (t != null)
             this._getDetailEl('dueTime').val(this._parseFullDateString(t));
     },
+    setDetail_Creator: function (u) {
+        if (!this.$el_detail) return;
+        this._getDetailEl('creator').html(u ? '<i class="icon-info-sign"></i> '
+            + u['name']
+            + lang.create_task + ' - '
+            + moment(this.createTime(), 'YYYY-MM-DD HH:mm:ss').fromNow() : '');
+    },
     setDetail_Assignee: function (u) {
         if (!this.$el_detail) return;
         this._getDetailEl('assignee').html(u ? u['name'] : '');
@@ -289,6 +344,22 @@ Task.prototype = {
         if (!this.$el_detail || !ps) return;
         if (this.render_detail_projects)
             this.render_detail_projects(this._getDetailEl('projects'), ps);
+    },
+    setDetail_Comments: function (cs) {
+        if (!this.$el_detail || !cs) return;
+        if (this.render_detail_comments)
+            this.render_detail_comments(this._getDetailEl('comments'), cs);
+    },
+    setDetail_Editable: function (b) {
+        if (!this.$el_detail) return;
+        this._getDetailEl('subject').attr('disabled', !this.editable);
+        this._getDetailEl('body').attr('disabled', !this.editable);
+        this._getDetailEl('dueTime').attr('disabled', !this.editable);
+        this._getDetailEl('priority').find('button').attr('disabled', !this.editable);
+        this._getDetailEl('assignee_btn')[this.editable ? 'show' : 'hide']();
+        this._getDetailEl('projects').find('.flag_removeProject')[this.editable ? 'show' : 'hide']();
+        this._getDetailEl('projects_btn')[this.editable ? 'show' : 'hide']();
+        this._getDetailEl('assignee_btn')[this.editable ? 'show' : 'hide']();
     }
 }
 /////////////////////////////////////////////////////////////////////////////////////////
