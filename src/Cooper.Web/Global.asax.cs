@@ -110,6 +110,7 @@ namespace Cooper.Web
             windsor.RegisterServices(Assembly.Load("AliCooper.Model"));
             windsor.RegisterComponent(Assembly.Load("AliCooper.Model"));
             windsor.RegisterComponent(typeof(Cooper.Web.AliExtensions.FetchTasklistHelper));
+            windsor.RegisterComponent(typeof(Cooper.Web.AliExtensions.UserHelper));
             windsor.RegisterController<Cooper.Web.AliExtensions.AccountController>();
             windsor.RegisterController<Cooper.Web.AliExtensions.TeamController>();
             //连接到SC
