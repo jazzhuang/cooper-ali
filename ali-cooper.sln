@@ -33,6 +33,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "original", "original", "{66
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AliCooper.Model", "ali-extensions\AliCooper.Model\AliCooper.Model.csproj", "{1AF6AA3F-D7AB-4FF4-84C9-32A2891A08C3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AliCooper.TeamImportTool", "ali-extensions\AliCooper.TeamImportTool\AliCooper.TeamImportTool.csproj", "{5D3DB0B1-4CDF-43C9-AA32-6993300CC9FD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -79,6 +81,10 @@ Global
 		{1AF6AA3F-D7AB-4FF4-84C9-32A2891A08C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1AF6AA3F-D7AB-4FF4-84C9-32A2891A08C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1AF6AA3F-D7AB-4FF4-84C9-32A2891A08C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D3DB0B1-4CDF-43C9-AA32-6993300CC9FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D3DB0B1-4CDF-43C9-AA32-6993300CC9FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D3DB0B1-4CDF-43C9-AA32-6993300CC9FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D3DB0B1-4CDF-43C9-AA32-6993300CC9FD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -92,5 +98,6 @@ Global
 		{0DFA7556-CAE3-451C-835D-DAD2C47CFDBF} = {F7E844FA-86C2-4BF8-AC9D-344F8CF62D3C}
 		{EB8605CE-983B-48CB-ADCF-C9F1B0EDD2E5} = {F7E844FA-86C2-4BF8-AC9D-344F8CF62D3C}
 		{1AF6AA3F-D7AB-4FF4-84C9-32A2891A08C3} = {F7E844FA-86C2-4BF8-AC9D-344F8CF62D3C}
+		{5D3DB0B1-4CDF-43C9-AA32-6993300CC9FD} = {F7E844FA-86C2-4BF8-AC9D-344F8CF62D3C}
 	EndGlobalSection
 EndGlobal
