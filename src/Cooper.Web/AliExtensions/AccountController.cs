@@ -11,6 +11,7 @@ using CodeSharp.Core.Services;
 using CodeSharp.Core.Utils;
 using Cooper.Model.Accounts;
 using Cooper.Web.Controllers;
+using Cooper.Model.Teams;
 
 namespace Cooper.Web.AliExtensions
 {
@@ -18,17 +19,19 @@ namespace Cooper.Web.AliExtensions
     /// </summary>
     public class AccountController : Cooper.Web.Controllers.AccountController
     {
-        private static CodeSharp.ServiceFramework.DefaultJSONSerializer _jsonHelper = new CodeSharp.ServiceFramework.DefaultJSONSerializer();
         private string _arkOAuth2Url;
         private string _arkOAuth2UserUrl;
         private bool _arkOAuth2Enable;
-        private string _api_user_workid;
+        private UserHelper _userHelper;
 
         public AccountController(ILoggerFactory factory
             , IContextService context
             , IAccountHelper accountHelper
             , IAccountService accountService
             , IAccountConnectionService accountConnectionService
+
+            , ITeamService teamService
+
             , string sysConfig_versionFlag
 
             , string googleOAuth2Url
@@ -51,12 +54,15 @@ namespace Cooper.Web.AliExtensions
             , string arkOAuth2UserUrl
             , string arkOAuth2Enable
 
-            , string ali_api_user_workid)
+            , UserHelper userHelper)
             : base(factory
             , context
             , accountHelper
             , accountService
             , accountConnectionService
+
+            , teamService
+
             , sysConfig_versionFlag
 
             , googleOAuth2Url
@@ -79,7 +85,7 @@ namespace Cooper.Web.AliExtensions
             this._arkOAuth2UserUrl = arkOAuth2UserUrl;
             this._arkOAuth2Enable = Convert.ToBoolean(arkOAuth2Enable);
 
-            this._api_user_workid = ali_api_user_workid;
+            this._userHelper = userHelper;
         }
 
         //aita应用接入
@@ -95,7 +101,7 @@ namespace Cooper.Web.AliExtensions
             if (string.Compare(source, code, StringComparison.CurrentCultureIgnoreCase) != 0)
                 throw new CooperknownException("您没有通过Aita验证，无法访问该页面");
 
-            var user = this.GetUser(workId);
+            var user = this._userHelper.GetUserByWorkId(workId);
             if (user == null)
                 throw new CooperknownException("不存在的工号");
             //这个方式无法获取token
@@ -109,6 +115,7 @@ namespace Cooper.Web.AliExtensions
             return View();
         }
         [HttpPost]
+        [ValidateInput(false)]
         public ActionResult ArkLogin(string state, string cbDomain, string tbLoginName, string tbPassword)
         {
             string domainUserName = string.Format("{0}\\{1}", cbDomain, tbLoginName);
@@ -167,11 +174,15 @@ namespace Cooper.Web.AliExtensions
             base.SetConnectionUrls(state);
             ViewBag.ArkUrl = this.GetArkUrl(state);
         }
-
-        private Taobao.Facades.UserInfo GetUser(string workId)
+        //HACK:根据ark连接取ali人员信息
+        protected override string ParseEmail(AccountConnection c)
         {
-            using (var wc = new WebClient() { Encoding = Encoding.UTF8 })
-                return _jsonHelper.Deserialize<Taobao.Facades.UserInfo>(wc.DownloadString(string.Format(this._api_user_workid, workId)));
+            var email = base.ParseEmail(c);
+            if (!string.IsNullOrWhiteSpace(email) || !(c is ArkConnection))
+                return email;
+            var ark = c as ArkConnection;
+            var user = this._userHelper.GetUserByUserName(ark.Name);
+            return user != null ? user.Email : null;
         }
     }
 }

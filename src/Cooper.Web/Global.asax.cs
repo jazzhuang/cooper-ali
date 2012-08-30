@@ -32,9 +32,10 @@ namespace Cooper.Web
             routes.IgnoreRoute("{*favicon}", new { favicon = @"(.*/)?favicon.ico(/.*)?" });
 
             routes.MapRoute("Personal", "per/{action}/{id}", new { controller = "Personal", action = "Index", id = UrlParameter.Optional });
-            routes.MapRoute("Team", "t/{teamId}", new { controller = "Team", action = "Index" });
-            routes.MapRoute("TeamProject", "t/{teamId}/p/{projectId}", new { controller = "Team", action = "Index" });
-            routes.MapRoute("TeamMember", "t/{teamId}/m/{memberId}", new { controller = "Team", action = "Index" });
+            routes.MapRoute("Team", "t/{teamId}", new { controller = "Team", action = "Index" }, new string[] { "Cooper.Web.AliExtensions" });//使用ali扩展的account
+            routes.MapRoute("TeamProject", "t/{teamId}/p/{projectId}", new { controller = "Team", action = "Index" }, new string[] { "Cooper.Web.AliExtensions" });//使用ali扩展的account
+            routes.MapRoute("TeamMember", "t/{teamId}/m/{memberId}", new { controller = "Team", action = "Index" }, new string[] { "Cooper.Web.AliExtensions" });//使用ali扩展的account
+            routes.MapRoute("TeamDefault", "Team/{action}", new { controller = "Team", action = "Index" }, new string[] { "Cooper.Web.AliExtensions" });//使用ali扩展的account
             routes.MapRoute("Account", "Account/{action}/{id}", new { controller = "Account", action = "Profile", id = UrlParameter.Optional }, new string[] { "Cooper.Web.AliExtensions" });//使用ali扩展的account
             routes.MapRoute("Default", "{controller}/{action}/{id}", new { controller = "Home", action = "Index", id = UrlParameter.Optional });
         }
@@ -110,6 +111,7 @@ namespace Cooper.Web
             windsor.RegisterComponent(Assembly.Load("AliCooper.Model"));
             windsor.RegisterComponent(typeof(Cooper.Web.AliExtensions.FetchTasklistHelper));
             windsor.RegisterController<Cooper.Web.AliExtensions.AccountController>();
+            windsor.RegisterController<Cooper.Web.AliExtensions.TeamController>();
             //连接到SC
             //var uri = CodeSharp.Framework.SystemConfig.Settings["serviceCenterNodeUri"];
             //CodeSharp.ServiceFramework.Configuration

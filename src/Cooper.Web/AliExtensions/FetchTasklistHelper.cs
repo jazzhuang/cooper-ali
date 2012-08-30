@@ -17,18 +17,19 @@ namespace Cooper.Web.AliExtensions
     public class FetchTasklistHelper : Cooper.Web.Controllers.FetchTaskHelper, IFetchTaskHelper
     {
         private static CodeSharp.ServiceFramework.DefaultJSONSerializer _jsonHelper = new CodeSharp.ServiceFramework.DefaultJSONSerializer();
-        private string _ali_api_user;
         private string _ali_api_tasks;
+        private UserHelper _userHelper;
         private Castle.Facilities.NHibernateIntegration.ISessionManager _sessionManager;
         public FetchTasklistHelper(IAccountConnectionService connectionService
             , string git_api_issues
+            , UserHelper userHelper
             , string ali_api_user
             , string ali_api_tasks
             , Castle.Facilities.NHibernateIntegration.ISessionManager sessionManager)
             : base(connectionService, git_api_issues)
         {
+            this._userHelper = userHelper;
             this._sessionManager = sessionManager;
-            this._ali_api_user = ali_api_user;
             this._ali_api_tasks = ali_api_tasks;
         }
 
@@ -62,7 +63,7 @@ namespace Cooper.Web.AliExtensions
             {
                 case "wf":
                     return this.FetchWf(ark);
-                case "ifree":
+                case "ifree研发管理":
                     return this.FetchIFree(ark);
                 default:
                     return null;
@@ -90,7 +91,7 @@ namespace Cooper.Web.AliExtensions
         }
         private TaskInfo[] FetchIFree(ArkConnection ark)
         {
-            var user = this.GetUser(ark.Name);
+            var user = this._userHelper.GetUserByUserName(ark.Name);
             DateTime due;
             return this._sessionManager
                     .OpenStatelessSession()
@@ -132,14 +133,9 @@ where OwnersHidden like '%{0}%'", user.ID)).List<object[]>().Select(o => new Tas
                 }).ToArray();
         }
 
-        private Taobao.Facades.UserInfo GetUser(string username)
-        {
-            using (var wc = new WebClient() { Encoding = Encoding.UTF8 })
-                return _jsonHelper.Deserialize<Taobao.Facades.UserInfo>(wc.DownloadString(string.Format(this._ali_api_user, HttpUtility.UrlEncode(username))));
-        }
         private Taobao.Facades.TaskInfo[] GetTasks(string username)
         {
-            
+
             using (var wc = new WebClient() { Encoding = Encoding.UTF8 })
                 return _jsonHelper.Deserialize<Taobao.Facades.TaskInfo[]>(wc.DownloadString(string.Format(this._ali_api_tasks, HttpUtility.UrlEncode(username))));
         }
