@@ -7,7 +7,7 @@ using CodeSharp.Core.Services;
 using Cooper.Model;
 using Cooper.Model.Accounts;
 using Cooper.Model.Tasks;
-using CooperTask = Cooper.Model.Tasks.Task;
+using CooperTask = Cooper.Model.Tasks.PersonalTask;
 
 namespace Cooper.Sync.Test
 {
@@ -21,6 +21,7 @@ namespace Cooper.Sync.Test
         protected ILog _logger;
         protected Account _account;
         protected ITaskService _taskService;
+        protected IPersonalTaskService _personalTaskService;
         protected IAccountService _accountService;
         protected IAccountConnectionService _accountConnectionService;
         protected IAccountHelper _accountHelper;
@@ -39,6 +40,7 @@ namespace Cooper.Sync.Test
             IAccountService accountService,
             IAccountConnectionService accountConnectionService,
             ITaskService taskService,
+            IPersonalTaskService personalTaskService,
             IExternalServiceProvider externalServiceProvider
             )
         {
@@ -51,6 +53,7 @@ namespace Cooper.Sync.Test
             _accountService = accountService;
             _accountConnectionService = accountConnectionService;
             _taskService = taskService;
+            _personalTaskService = personalTaskService;
             _externalServiceProvider = externalServiceProvider;
         }
 
@@ -287,7 +290,7 @@ namespace Cooper.Sync.Test
             foreach (var taskData in taskSyncResult.LocalDatasToUpdate)
             {
                 //更新任务
-                CooperTask task = _taskService.GetTask(long.Parse(taskData.Id));
+                CooperTask task = _taskService.GetTask(long.Parse(taskData.Id)) as CooperTask;
 
                 task.SetSubject(taskData.Subject ?? string.Empty);
                 task.SetBody(FormatTaskBody(taskData.Body));
@@ -474,7 +477,7 @@ namespace Cooper.Sync.Test
         {
             List<TaskSyncData> dataList = new List<TaskSyncData>();
 
-            var tasks = _taskService.GetTasks(account);
+            var tasks = _personalTaskService.GetTasks(account);
             foreach (var task in tasks)
             {
                 dataList.Add(CreateFromTask(task));

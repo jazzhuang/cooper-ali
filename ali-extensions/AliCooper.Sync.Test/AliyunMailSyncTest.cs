@@ -7,7 +7,7 @@ using CodeSharp.Core.Services;
 using Cooper.Sync;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NUnit.Framework;
-using CooperTask = Cooper.Model.Tasks.Task;
+using CooperTask = Cooper.Model.Tasks.PersonalTask;
 using MicrosoftAssert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
 
 namespace AliCooper.Sync.Test
@@ -291,7 +291,7 @@ namespace AliCooper.Sync.Test
         }
         private CooperTask UpdateCooperTask(long taskId, string subject, string body, DateTime? dueTime, bool isCompleted)
         {
-            CooperTask task = _taskService.GetTask(taskId);
+            CooperTask task = _taskService.GetTask(taskId) as CooperTask;
 
             task.SetSubject(subject);
             task.SetBody(body);
@@ -319,7 +319,7 @@ namespace AliCooper.Sync.Test
         }
         private CooperTask GetCooperTask(long taskId)
         {
-            return _taskService.GetTask(taskId);
+            return _taskService.GetTask(taskId) as CooperTask;
         }
         private void DeleteCooperTask(long taskId)
         {

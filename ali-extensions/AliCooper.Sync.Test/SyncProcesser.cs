@@ -12,7 +12,7 @@ using Cooper.Model.Tasks;
 using Cooper.Sync;
 using Microsoft.Exchange.WebServices.Data;
 using NUnit.Framework;
-using CooperTask = Cooper.Model.Tasks.Task;
+using CooperTask = Cooper.Model.Tasks.PersonalTask;
 
 namespace AliCooper.Sync.Test
 {
@@ -47,6 +47,7 @@ namespace AliCooper.Sync.Test
         private AliyunMailConnection _aliyunMailConnection;
 
         private ITaskService _taskService;
+        private IPersonalTaskService _personalTaskService;
         private IAccountService _accountService;
         private IAccountConnectionService _accountConnectionService;
         private IAccountHelper _accountHelper;
@@ -76,6 +77,7 @@ namespace AliCooper.Sync.Test
             _accountService = DependencyResolver.Resolve<IAccountService>();
             _accountConnectionService = DependencyResolver.Resolve<IAccountConnectionService>();
             _taskService = DependencyResolver.Resolve<ITaskService>();
+            _personalTaskService = DependencyResolver.Resolve<IPersonalTaskService>();
 
             _microsoftExchangeServiceProvider = DependencyResolver.Resolve<IMicrosoftExchangeServiceProvider>();
 
@@ -244,7 +246,7 @@ namespace AliCooper.Sync.Test
             foreach (var taskData in taskSyncResult.LocalDatasToUpdate)
             {
                 //更新任务
-                CooperTask task = _taskService.GetTask(long.Parse(taskData.Id));
+                CooperTask task = _taskService.GetTask(long.Parse(taskData.Id)) as CooperTask;
 
                 task.SetSubject(taskData.Subject ?? string.Empty);
                 task.SetBody(FormatTaskBody(taskData.Body));
@@ -1121,7 +1123,7 @@ namespace AliCooper.Sync.Test
         {
             List<TaskSyncData> dataList = new List<TaskSyncData>();
 
-            var tasks = _taskService.GetTasks(account);
+            var tasks = _personalTaskService.GetTasks(account);
             foreach (var task in tasks)
             {
                 dataList.Add(CreateFromTask(task));

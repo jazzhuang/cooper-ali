@@ -59,12 +59,13 @@ namespace Cooper.Sync.Test
             IAccountService accountService,
             IAccountConnectionService accountConnectionService,
             ITaskService taskService,
+            IPersonalTaskService personalTaskService,
             IExternalServiceProvider externalServiceProvider,
             IGoogleTokenService googleTokenService,
             IGoogleTaskSyncService googleTaskSyncService,
             IGoogleCalendarEventSyncService googleCalendarEventSyncService,
             IGoogleContactSyncService googleContactSyncService)
-            : base(lockHelper, loggerFactory, sessionManager, accountHelper, accountService, accountConnectionService, taskService, externalServiceProvider)
+            : base(lockHelper, loggerFactory, sessionManager, accountHelper, accountService, accountConnectionService, taskService, personalTaskService, externalServiceProvider)
         {
             lockHelper.Init<GoogleConnection>();
             _googleTokenService = googleTokenService;

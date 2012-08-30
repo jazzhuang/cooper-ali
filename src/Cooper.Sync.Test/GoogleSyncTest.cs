@@ -7,7 +7,7 @@ using DotNetOpenAuth.OAuth2;
 using Google.Apis.Calendar.v3.Data;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NUnit.Framework;
-using CooperTask = Cooper.Model.Tasks.Task;
+using CooperTask = Cooper.Model.Tasks.PersonalTask;
 using GoogleTask = global::Google.Apis.Tasks.v1.Data.Task;
 using MicrosoftAssert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
 
@@ -491,7 +491,7 @@ namespace Cooper.Sync.Test
         }
         private CooperTask UpdateCooperTask(long taskId, string subject, string body, DateTime? dueTime, bool isCompleted)
         {
-            CooperTask task = _taskService.GetTask(taskId);
+            CooperTask task = _taskService.GetTask(taskId) as CooperTask;
 
             task.SetSubject(subject);
             task.SetBody(body);
@@ -511,7 +511,7 @@ namespace Cooper.Sync.Test
         }
         private CooperTask GetCooperTask(long taskId)
         {
-            return _taskService.GetTask(taskId);
+            return _taskService.GetTask(taskId) as CooperTask;
         }
         private void DeleteCooperTask(long taskId)
         {
