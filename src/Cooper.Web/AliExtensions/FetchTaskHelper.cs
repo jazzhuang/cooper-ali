@@ -109,25 +109,30 @@ end) as TaskType,
 d.Name as TaskName, 
 Owners, 
 pd.PlanStartTime, 
-pd.PlanEndTime,
+pd.PlanEndTime, 
 (case d.[type]
-    when 1 then 'http://ifree.taobao.org/taskmanage/Plan/BasicDemandDetail?planDemandId='+cast(pd.id as nvarchar(50))
-    when 2 then 'http://ifree.taobao.org/taskmanage/Plan/TeamRelatedDemandDetail?planDemandId='+cast(pd.id as nvarchar(50))
-    when 3 then 'http://ifree.taobao.org/taskmanage/Plan/AppRelatedDemandDetail?planDemandId='+cast(pd.id as nvarchar(50))
-    when 4 then 'http://ifree.taobao.org/taskmanage/Plan/AssignAppDemandDetail?planDemandId='+cast(pd.id as nvarchar(50))
-    when 5 then 'http://ifree.taobao.org/taskmanage/Plan/ReviewDemandDetail?planDemandId='+cast(pd.id as nvarchar(50))
-    when 6 then 'http://ifree.taobao.org/taskmanage/Plan/ReviewQuestionDemandDetail?planDemandId='+cast(pd.id as nvarchar(50))
+    when 1 then 'https://ifree.alibaba-inc.com/taskmanage/Plan/BasicDemandDetail?planDemandId='+cast(pd.id as nvarchar(50))
+    when 2 then 'https://ifree.alibaba-inc.com/taskmanage/Plan/TeamRelatedDemandDetail?planDemandId='+cast(pd.id as nvarchar(50))
+    when 3 then 'https://ifree.alibaba-inc.com/taskmanage/Plan/AppRelatedDemandDetail?planDemandId='+cast(pd.id as nvarchar(50))
+    when 4 then 'https://ifree.alibaba-inc.com/taskmanage/Plan/AssignAppDemandDetail?planDemandId='+cast(pd.id as nvarchar(50))
+    when 5 then 'https://ifree.alibaba-inc.com/taskmanage/Plan/ReviewDemandDetail?planDemandId='+cast(pd.id as nvarchar(50))
+    when 6 then 'https://ifree.alibaba-inc.com/taskmanage/Plan/ReviewQuestionDemandDetail?planDemandId='+cast(pd.id as nvarchar(50))
     else ''
-end) as TaskDetailUrl
-from taobaoent.dbo.iFreeTaskManage_PlanDemands pd inner join taobaoent.dbo.iFreeTaskManage_Demands d on pd.demandId=d.RequestId
-where OwnersHidden like '%{0}%'", user.ID)).List<object[]>().Select(o => new TaskInfo()
+end) as TaskDetailUrl, 
+pd.id as taskId, 
+pro.ProjectName 
+from taobaoent.dbo.iFreeTaskManage_PlanDemands pd
+inner join taobaoent.dbo.iFreeTaskManage_Demands d on pd.demandId=d.RequestId
+inner join taobaoent.dbo.iFreeTaskManage_Plans p on pd.planId=p.Id
+inner join taobaoent.dbo.wf_TDMSProject pro on p.projectId=pro.RequestId
+where d.Status in (1,2) and OwnersHidden like '%{0}%'", user.ID)).List<object[]>().Select(o => new TaskInfo()
                 {
-                    ID = Guid.NewGuid().ToString(),
-                    Body = string.Format("{0}\n\n{1}\n\n{2}\n\n{3}", o[0], o[1], o[2], o[3], o[4]),
+                    ID = o[6].ToString(),
+                    Body = string.Format("{0}\n\n{1}\n\n{2}\n\n{3}\n\n{4}", o[0], o[1], o[2], o[3], o[4]),
                     DueTime = DateTime.TryParse((o[4] ?? string.Empty).ToString(), out due) ? due.ToString("yyyy-MM-dd") : null,
                     IsCompleted = false,
                     Priority = 0,
-                    Subject = string.Format("【{0}】{1}", o[0], o[1]),
+                    Subject = string.Format("{0} - {1}", o[1], o[7]),
                     Editable = false
 
                 }).ToArray();
@@ -135,7 +140,6 @@ where OwnersHidden like '%{0}%'", user.ID)).List<object[]>().Select(o => new Tas
 
         private Taobao.Facades.TaskInfo[] GetTasks(string username)
         {
-
             using (var wc = new WebClient() { Encoding = Encoding.UTF8 })
                 return _jsonHelper.Deserialize<Taobao.Facades.TaskInfo[]>(wc.DownloadString(string.Format(this._ali_api_tasks, HttpUtility.UrlEncode(username))));
         }
