@@ -133,7 +133,7 @@
   <ItemGroup>
     <Compile Include="AliExtensions\AccountController.cs" />
     <Compile Include="AliExtensions\Ark.cs" />
-    <Compile Include="AliExtensions\FetchTasklistHelper.cs" />
+    <Compile Include="AliExtensions\FetchTaskHelper.cs" />
     <Compile Include="AliExtensions\TeamController.cs" />
     <Compile Include="AliExtensions\UserHelper.cs" />
     <Compile Include="Controllers\AccountController.cs" />
