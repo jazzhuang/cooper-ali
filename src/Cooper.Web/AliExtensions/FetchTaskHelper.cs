@@ -11,16 +11,16 @@ using System.Text;
 
 namespace Cooper.Web.AliExtensions
 {
-    /// <summary>FetchTasklist辅助扩展，增加部分内部系统任务
+    /// <summary>FetchTask辅助扩展，增加部分内部系统任务
     /// </summary>
     [CodeSharp.Core.Component]
-    public class FetchTasklistHelper : Cooper.Web.Controllers.FetchTaskHelper, IFetchTaskHelper
+    public class FetchTaskHelper : Cooper.Web.Controllers.FetchTaskHelper, IFetchTaskHelper
     {
         private static CodeSharp.ServiceFramework.DefaultJSONSerializer _jsonHelper = new CodeSharp.ServiceFramework.DefaultJSONSerializer();
         private string _ali_api_tasks;
         private UserHelper _userHelper;
         private Castle.Facilities.NHibernateIntegration.ISessionManager _sessionManager;
-        public FetchTasklistHelper(IAccountConnectionService connectionService
+        public FetchTaskHelper(IAccountConnectionService connectionService
             , string git_api_issues
             , UserHelper userHelper
             , string ali_api_user
@@ -47,7 +47,7 @@ namespace Cooper.Web.AliExtensions
             if (ark != null)
             {
                 dict.Add("wf", "流程平台");
-                dict.Add("ifree", "IFree");
+                dict.Add("ifree", "IFree研发管理");
             }
             return dict;
         }
@@ -63,7 +63,7 @@ namespace Cooper.Web.AliExtensions
             {
                 case "wf":
                     return this.FetchWf(ark);
-                case "ifree研发管理":
+                case "ifree":
                     return this.FetchIFree(ark);
                 default:
                     return null;
