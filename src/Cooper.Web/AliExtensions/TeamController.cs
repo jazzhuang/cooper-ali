@@ -61,5 +61,23 @@ namespace Cooper.Web.AliExtensions
                 ? this._accountConnectionService.GetConnection<ArkConnection>(user.UserName)
                 : null;
         }
+        protected override AccountInfo Parse(Account a)
+        {
+            var ark = this._accountConnectionService
+                .GetConnections(a)
+                .FirstOrDefault(o => o is ArkConnection) as ArkConnection;
+
+            Taobao.Facades.UserInfo user;
+            if (ark == null
+                || (user = this._userHelper.GetUserByUserName(ark.Name)) == null)
+                return base.Parse(a);
+
+            return new AccountInfo()
+            {
+                ID = a.ID.ToString(),
+                Name = user.DisplayName,
+                Email = user.Email
+            };
+        }
     }
 }
