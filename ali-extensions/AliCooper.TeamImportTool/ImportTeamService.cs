@@ -173,18 +173,39 @@ namespace AliCooper.TeamImportTool
         /// <returns></returns>
         private IEnumerable<SearchResult> FilterEmailAddressLists(IEnumerable<SearchResult> totalEmailAddressLists)
         {
+            bool isImportSpecifiedEmailLists = bool.Parse(ConfigurationManager.AppSettings["isImportSpecifiedEmailLists"]);
+            string[] emailListNames = ConfigurationManager.AppSettings["emailListNames"].Split(new char[] { ';', ',', '；','，' });
             int minTeamMemberCount = int.Parse(ConfigurationManager.AppSettings["minTeamMemberCount"]);
             int maxTeamMemberCount = int.Parse(ConfigurationManager.AppSettings["maxTeamMemberCount"]);
 
-            return totalEmailAddressLists.Where(emailAddressList =>
+            if (isImportSpecifiedEmailLists)
             {
-                var members = emailAddressList.Properties["member"];
-                if (members.Count >= minTeamMemberCount && members.Count <= maxTeamMemberCount)
+                if (emailListNames.Length > 0)
                 {
-                    return true;
+                    return totalEmailAddressLists.Where(emailAddressList =>
+                    {
+                        var emailListName = emailAddressList.Properties["displayName"][0] as string; //邮件组名称
+                        if (emailListNames.Contains(emailListName))
+                        {
+                            return true;
+                        }
+                        return false;
+                    });
                 }
-                return false;
-            });
+                return new List<SearchResult>();
+            }
+            else
+            {
+                return totalEmailAddressLists.Where(emailAddressList =>
+                {
+                    var members = emailAddressList.Properties["member"];
+                    if (members.Count >= minTeamMemberCount && members.Count <= maxTeamMemberCount)
+                    {
+                        return true;
+                    }
+                    return false;
+                });
+            }
         }
         private bool AddTeamMember(Team team, DirectoryEntry memberEntry)
         {
