@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cooper.Model", "src\Cooper.Model\Cooper.Model.csproj", "{3B0D9250-5A81-455E-8AC1-700840DB909F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cooper.Model.Mappings", "src\Cooper.Model.Mappings\Cooper.Model.Mappings.csproj", "{D77B5EDE-FB5E-476E-9B3B-6F3940A5EB08}"
@@ -34,6 +34,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AliCooper.Model", "ali-extensions\AliCooper.Model\AliCooper.Model.csproj", "{1AF6AA3F-D7AB-4FF4-84C9-32A2891A08C3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AliCooper.TeamImportTool", "ali-extensions\AliCooper.TeamImportTool\AliCooper.TeamImportTool.csproj", "{5D3DB0B1-4CDF-43C9-AA32-6993300CC9FD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AliCooper.AssociateMemberAccountTool", "ali-extensions\AliCooper.AssociateMemberAccountTool\AliCooper.AssociateMemberAccountTool.csproj", "{8BBC7C71-CB00-4719-A4FA-FD9E017D7E5D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -85,6 +87,10 @@ Global
 		{5D3DB0B1-4CDF-43C9-AA32-6993300CC9FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5D3DB0B1-4CDF-43C9-AA32-6993300CC9FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5D3DB0B1-4CDF-43C9-AA32-6993300CC9FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8BBC7C71-CB00-4719-A4FA-FD9E017D7E5D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8BBC7C71-CB00-4719-A4FA-FD9E017D7E5D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8BBC7C71-CB00-4719-A4FA-FD9E017D7E5D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8BBC7C71-CB00-4719-A4FA-FD9E017D7E5D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -99,5 +105,6 @@ Global
 		{EB8605CE-983B-48CB-ADCF-C9F1B0EDD2E5} = {F7E844FA-86C2-4BF8-AC9D-344F8CF62D3C}
 		{1AF6AA3F-D7AB-4FF4-84C9-32A2891A08C3} = {F7E844FA-86C2-4BF8-AC9D-344F8CF62D3C}
 		{5D3DB0B1-4CDF-43C9-AA32-6993300CC9FD} = {F7E844FA-86C2-4BF8-AC9D-344F8CF62D3C}
+		{8BBC7C71-CB00-4719-A4FA-FD9E017D7E5D} = {F7E844FA-86C2-4BF8-AC9D-344F8CF62D3C}
 	EndGlobalSection
 EndGlobal

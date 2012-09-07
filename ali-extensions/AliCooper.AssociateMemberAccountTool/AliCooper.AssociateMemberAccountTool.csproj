@@ -1,18 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{5D3DB0B1-4CDF-43C9-AA32-6993300CC9FD}</ProjectGuid>
+    <ProjectGuid>{8BBC7C71-CB00-4719-A4FA-FD9E017D7E5D}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>AliCooper.TeamImportTool</RootNamespace>
-    <AssemblyName>AliCooper.TeamImportTool</AssemblyName>
+    <RootNamespace>AliCooper.AssociateMemberAccountTool</RootNamespace>
+    <AssemblyName>AliCooper.AssociateMemberAccountTool</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <TargetFrameworkProfile>
-    </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -47,7 +44,8 @@
     <Reference Include="CodeSharp.Core.Castles">
       <HintPath>..\..\packages\CodeSharp.Core.Castles.2.0\lib\net40\CodeSharp.Core.Castles.dll</HintPath>
     </Reference>
-    <Reference Include="FluentNHibernate">
+    <Reference Include="FluentNHibernate, Version=1.3.0.733, Culture=neutral, PublicKeyToken=8aa435e3cb308880, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\CodeSharp.Core.Castles.2.0\lib\net40\FluentNHibernate.dll</HintPath>
     </Reference>
     <Reference Include="Iesi.Collections">
@@ -78,36 +76,49 @@
     </Reference>
     <Reference Include="System.DirectoryServices" />
     <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="ImportTeamService.cs" />
-    <Compile Include="Program.cs" />
+    <Reference Include="Taobao.Application">
+      <HintPath>..\..\packages\Taobao.Model.1.0\lib\net35\Taobao.Application.dll</HintPath>
+    </Reference>
+    <Reference Include="Taobao.Model">
+      <HintPath>..\..\packages\Taobao.Model.1.0\lib\net35\Taobao.Model.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Cooper.Model.Mappings\Cooper.Model.Mappings.csproj">
-      <Project>{D77B5EDE-FB5E-476E-9B3B-6F3940A5EB08}</Project>
+      <Project>{d77b5ede-fb5e-476e-9b3b-6f3940a5eb08}</Project>
       <Name>Cooper.Model.Mappings</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\src\Cooper.Model\Cooper.Model.csproj">
-      <Project>{3B0D9250-5A81-455E-8AC1-700840DB909F}</Project>
+      <Project>{3b0d9250-5a81-455e-8ac1-700840db909f}</Project>
       <Name>Cooper.Model</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\src\Cooper.Repositories\Cooper.Repositories.csproj">
       <Project>{b11c1da3-29c6-4312-8790-17db4f900c51}</Project>
       <Name>Cooper.Repositories</Name>
     </ProjectReference>
+    <ProjectReference Include="..\AliCooper.Model.Mappings\AliCooper.Model.Mappings.csproj">
+      <Project>{38f8434d-da0e-4a7a-bb46-f165e4bc9e1e}</Project>
+      <Name>AliCooper.Model.Mappings</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\AliCooper.Model\AliCooper.Model.csproj">
+      <Project>{1af6aa3f-d7ab-4ff4-84c9-32a2891a08c3}</Project>
+      <Name>AliCooper.Model</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\AliCooper.Repositories\AliCooper.Repositories.csproj">
+      <Project>{0dfa7556-cae3-451c-835d-dad2c47cfdbf}</Project>
+      <Name>AliCooper.Repositories</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="ConfigFiles\facilities.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="ConfigFiles\log4net.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="ConfigFiles\properties.config" />
+    <Compile Include="AssociateMemberAccountService.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="UserHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <EmbeddedResource Include="ConfigFiles\facilities.config" />
+    <EmbeddedResource Include="ConfigFiles\log4net.config" />
+    <EmbeddedResource Include="ConfigFiles\properties.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
