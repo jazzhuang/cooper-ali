@@ -7,24 +7,38 @@ Fork from Cooper OpenSource.
 
 ## ICON
 
-![cooper](http://www.icodesharp.com/cooper.png)
+![logo](https://cooper.apphb.com/favicon.ico)
 
 ## Showcase
 
 [Demo On Appharbor](https://cooper.apphb.com)
 
-[Service On Azure](https://cooper.websites.com)
+[Demo On Azure](https://cooper.websites.com)
+
+[Public Service Coming soon](https://incooper.net)
 
 ======
 
 ## Build
 
+Depends on git@github.com:codesharp/work-tool.git for building tools.
+
+.NET
 ```shell
-runfirst
 build nuget
 build test_model Debug
 build web [Debug/Test/Release]
 ```
+
+MONO (build via xbuild)
+```shell
+sh build.sh nuget
+or
+sh nuget.insatll.sh
+sh build.sh test_model Debug
+sh build.sh web [Debug/Test/Release]
+```
+
 
 ## Style Reference
 
