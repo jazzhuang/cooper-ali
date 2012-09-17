@@ -54,6 +54,7 @@
                     <td class="cell_string">
                         <input id="subject" value="{subject}" maxlength="500" />
                         <div>
+                            <span id="tags"></span>
                             <span id="dueTimeLabel" class="cell_duetime"></span>
                             @if (mini)
                             {
@@ -97,7 +98,7 @@
                 <tbody>
                     <tr>
                         <td colspan="2">
-                            <input id="subject" type="text" class="detail-title" value="{subject}" />
+                            <input id="subject" type="text" class="detail-title" value="{subject}" maxlength="500"/>
                         </td>
                     </tr>
                     <tr>
@@ -112,8 +113,6 @@
                         <td class="detail-content">
                             <div id="urls" class="btn-group">
                                 <button class="btn" style="width:80%; height:28px; text-align:left; overflow:hidden; word-break:break-all;text-overflow: ellipsis;">
-                                    <i class="icon-file"></i>
-                                    <a target="_blank"></a>
                                 </button>
                                 <button class="btn dropdown-toggle" data-toggle="dropdown">
                                 <span class="caret"></span>
@@ -163,6 +162,18 @@
                                     <i class="icon-pause" priority="2"></i>
                                 </button>
                             </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="detail-item">
+                            @this.Lang().tags
+                        </td>
+                        <td class="detail-content">
+                            <span id="tags"></span>
+                            <input id="tags_input" type="text" class="input-small" style="display: none" maxlength="15"/>
+                            <button id="tags_btn" class="btn btn-mini">
+                                <i class="icon-plus"></i>
+                            </button>
                         </td>
                     </tr>
                     <tr>

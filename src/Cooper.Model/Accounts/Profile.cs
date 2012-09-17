@@ -1,19 +1,27 @@
 ﻿//Copyright (c) CodeSharp.  All rights reserved. - http://www.icodesharp.com/
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using CodeSharp.Core.DomainBase;
-using CodeSharp.Core.Utils;
 
 namespace Cooper.Model.Accounts
 {
     /// <summary>个人账号设置
     /// </summary>
-    public class Profile : ExtensiableEntityBase<int>
+    public class Profile : EntityBase<int>
     {
         private Account _account { get; set; }
+        private ExtensionDictionary _settings;
+
+        /// <summary>自定义扩展信息字典
+        /// </summary>
+        public ExtensionDictionary Settings
+        {
+            get
+            {
+                if (this._settings == null)
+                    this._settings = new ExtensionDictionary();
+                return _settings;
+            }
+        }
 
         protected Profile() { }
         internal Profile(Account account)

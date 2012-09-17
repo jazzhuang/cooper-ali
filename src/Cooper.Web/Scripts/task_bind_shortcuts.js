@@ -11,8 +11,11 @@ UI_List_Common.prototype._bindShortcuts = function () {
     //可连续触发
     this.$wrapper.keydown(function (e) {
         //debuger.debug(e.keyCode);
+        //debuger.debug(e.shiftKey);
+        //是否是输入法事件
+        var ime = e.keyCode == 229;
         //首次shift时
-        if (e.keyCode == 16) {
+        if (e.keyCode == 16 || (e.shiftKey && ime)) {
             base._$shiftBegin = base.$focusRow;
             return;
         }
@@ -27,13 +30,16 @@ UI_List_Common.prototype._bindShortcuts = function () {
         var backspace = e.keyCode == 8;
 
         //集中忽略非快捷键处理
-        if (!ctrl && !shift && !up && !down && !enter && !backspace)
-            return;
+        //此处集中忽略导致系统快捷键功能失效
+        //if (!ctrl && !shift && !up && !down && !enter && !backspace)
+        //return;
 
         var $focus = base.$focusRow;
         var $actives = base.getActives();
         //过滤不在合法区域的行
         var $actives2 = $actives.filter(function () { return base._isRowOfValidRegion($(this)); });
+        //以及非编辑状态的任务
+        var $actives3 = $actives2.filter(function () { return base.getTask($(this)).editable; });
 
         ////////////////////////////////////////////////////////////////////////////////////////
         //非编辑模式下的快捷键处理
@@ -50,6 +56,14 @@ UI_List_Common.prototype._bindShortcuts = function () {
         }
         //仅当有焦点行时才有效的行为
         if ($focus == null) return;
+        ////////////////////////////////////////////////////////////////////////////////////////
+        //新建Enter
+        //由于输入法问题，不可放置在keyup事件中
+        //https://github.com/codesharp/cooper/issues/98
+        if (!ctrl && enter && base.modeArgs.editable) {
+            base.appendTask();
+            return false;
+        }
         ////////////////////////////////////////////////////////////////////////////////////////
         //删除backspace PS:若使用keyup会与正常删除冲突导致只剩一个字符时触发删除
         if (backspace) {
@@ -90,9 +104,12 @@ UI_List_Common.prototype._bindShortcuts = function () {
                 var $prev = base._findAnyPrev($actives2.first());
                 if (!$prev) return;
                 if (base.isTask($prev))
-                    $actives2.insertBefore($prev);
+                    $actives2.insertBefore($prev);//TODO:增加判断目标区域的sortkey是否变更
                 else if (base._isValidRegion($prev))
-                    $prev.append($actives2);
+                    $prev.append($actives3);
+                //UNDONE:不可编辑的任务不应被跨分组移动，当前只处理了基本情况
+                //https://github.com/codesharp/cooper/issues/105
+                //简单处理：不可编辑的直接忽略，使用$active3
             }
             else if (down) {
                 var $next = base._findAnyNext($actives2.last());
@@ -100,15 +117,19 @@ UI_List_Common.prototype._bindShortcuts = function () {
                 if (base.isTask($next))
                     $actives2.insertAfter($next);
                 else if (base._isValidRegion($next))
-                    $next.prepend($actives2);
+                    $next.prepend($actives3);
             }
-            //移动过程中会丢失焦点，在此修正
-            base.focusRow($focus);
-            //由于顺序变更需要刷新排序等
-            base._flushSorts();
-            //取消事件冒泡避免滚动条意外滚动
-            e.preventDefault();
-            e.stopPropagation();
+            //避免阻断其他快捷键
+            //issue:https://github.com/codesharp/cooper/issues/87
+            if (up || down) {
+                //移动过程中会丢失焦点，在此修正
+                base.focusRow($focus);
+                //由于顺序变更需要刷新排序等
+                base._flushSorts();
+                //取消事件冒泡避免滚动条意外滚动
+                e.preventDefault();
+                e.stopPropagation();
+            }
             return;
         }
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -128,6 +149,7 @@ UI_List_Common.prototype._bindShortcuts = function () {
 
     //非连续触发，安全操作
     this.$wrapper.keyup(function (e) {
+        //debuger.debug('keyup=' + e.keyCode);
         if (e.keyCode == 17) return;
         var ctrl = e.ctrlKey;
         var shift = e.shiftKey;
@@ -147,12 +169,6 @@ UI_List_Common.prototype._bindShortcuts = function () {
         //以及非编辑状态的任务
         var $actives3 = $actives2.filter(function () { return base.getTask($(this)).editable; });
 
-        ////////////////////////////////////////////////////////////////////////////////////////
-        //新建Enter
-        if (!ctrl && enter && base.modeArgs.editable) {
-            base.appendTask();
-            return;
-        }
         ////////////////////////////////////////////////////////////////////////////////////////
         //完成Ctrl+Enter
         if (ctrl && enter) {

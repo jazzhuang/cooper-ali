@@ -1,7 +1,9 @@
 ﻿//Copyright (c) CodeSharp.  All rights reserved. - http://www.icodesharp.com/
 
+///<reference path="../Content/jquery/jquery-1.7.2.min.js" />
 ///<reference path="task.js" />
 ///<reference path="task_common.js" />
+///<reference path="task_detail.js" />
 ///<reference path="task_row.js" />
 
 //wrapper主体事件绑定，处理全局事件
@@ -78,7 +80,7 @@ UI_List_Common.prototype._bind = function () {
             //呈现详情
             if ($avtives.length == 1)
                 base._renderDetail($focus);
-            //批量详情
+                //批量详情
             else if ($avtives.length > 1)
                 base._renderBatchDetail($avtives);
             debuger.profileEnd('row_task_click');
@@ -109,19 +111,26 @@ UI_List_Common.prototype._bind = function () {
     });
     ////////////////////////////////////////////////////////////////////////////////////////
     //详情区域 支持批量处理
+    //TODO:各自重构为控件区域
     ////////////////////////////////////////////////////////////////////////////////////////
     //subject、body
     this.$wrapper_detail.keyup(function (e) {
         var $el = $(e.target);
         var isSubject = $el.is('#subject');
         var isBody = $el.is('#body');
-        if (!isSubject && !isBody) return;
+        //if (!isSubject && !isBody) return;
         var task = base.getTaskById($el.parents('.region_detail').eq(0).attr('id'));
         if (isSubject)
             task.setSubject($el.val(), true);
         else if (isBody)
             task.setBody($el.val());
     });
+    this.$wrapper_detail.keydown(function (e) {
+        //防止ie回车键下提交表单
+        if (e.keyCode == 13 && $(e.target).is('input'))
+            return false;
+    });
+    //priority
     this.$wrapper_detail.click(function (e) {
         var $el = $(e.target);
         var ids = $el.parents('.region_detail');
@@ -142,7 +151,7 @@ UI_List_Common.prototype._bind = function () {
             return;
         }
         //是否完成 需处理批量场景
-        if ($el.is('#isCompleted') || ($el = $el.parent()).is('#isCompleted')) {
+        if ($el.is('#isCompleted') || ($el.parent().is('#isCompleted') && ($el = $el.parent()))) {
             var isCompleted = !$el.hasClass('active');
             for (var i = 0; i < ids.length; i++) {
                 var task = base.getTaskById(ids[i]);
@@ -156,11 +165,12 @@ UI_List_Common.prototype._bind = function () {
             //批量情况的修正
             if (ids.length > 1)
                 $el
-                        [isCompleted ? 'addClass' : 'removeClass']('active')
-                        [isCompleted ? 'addClass' : 'removeClass']('btn-success');
+                    [isCompleted ? 'addClass' : 'removeClass']('active')
+                    [isCompleted ? 'addClass' : 'removeClass']('btn-success');
             return;
         }
     });
+    //dueTime
     this.$wrapper_detail.change(function (e) {
         var $el = $(e.target);
         //dueTime调整 需处理批量场景
@@ -180,16 +190,181 @@ UI_List_Common.prototype._bind = function () {
                 task.setDueTime(t); //TODO:调整格式yy-mm-dd
             }
             if (ids.length > 0)
-            //额外逻辑
+                //额外逻辑
                 if (base.onDueTimeBatchChange)
                     base.onDueTimeBatchChange(tasks, t);
         }
     });
-    //部分事件无法全局绑定
-    Task.prototype.bind_detail = function ($el_detail, task) {
+
+    //部分Task事件，不适合全局绑定
+    Task.prototype.bind_detail = function () { base.bind_detail.apply(base, arguments); };//延续this
+}
+//详情区域绑定，能同时处理批量详情
+//TODO:将更多的任务详情渲染放在此进行以使逻辑清晰
+UI_List_Common.prototype.bind_detail = function ($el_detail, task) {
+    //此函数的this要注意处理
+    var base = this;
+    var batch = $.isArray(task);
+
+    if (!batch) {
         //datepicker重复初始化问题
         $el_detail.find('#dueTime').removeClass('hasDatepicker');
         if (task.editable)
             $el_detail.find('#dueTime').datepicker();
     }
+
+    //标签设置区域初始化
+    var $tags = $el_detail.find('#tags');
+    var $tags_input = $el_detail.find('#tags_input');
+    var $tags_btn = $el_detail.find('#tags_btn');
+    var tags = base.getTags();
+    base.detail_array_control_bind(task,
+        'render_detail_tags',
+        'removeTag',
+        false,
+        $tags,
+        $tags_input,
+        $tags_btn,
+        tags.length > 0 ? tags : [''],//至少需要一个以供搜索时能够有机会新增
+        function (item) {
+            var q = this.query;
+            var r = ~item.toLowerCase().indexOf(this.query.toLowerCase());
+            //支持在搜索到不存在项时自动插入新项
+            if (!r)
+                this.source = $.merge($.grep(this.source, function (n) { return n != q }), [q]);
+            return r;
+        },
+        function (items) {
+            var that = this;
+            //重新match
+            var all = $.grep(this.source, function (item) {
+                return that.matcher(item)
+            })
+            //HACK:重载sorter使其支持搜索时新增
+            //依赖于bootstrap当前实现
+            return $.fn.typeahead.Constructor.prototype.sorter.apply(this, [all]);
+        },
+        function (val) {
+            debuger.debug('add-tags-val', val);
+            if (batch) {
+                for (var i = 0; i < task.length; i++)
+                    //TODO:可重构至detail_array_control_bind进行统一拦截
+                    if (task[i].editable)
+                        task[i].addTag(val);
+            }
+            else
+                task.addTag(val);
+            //同时添加进全局
+            base.addTag(val);
+            //$tags_input.blur();
+            return val;
+        }
+    );
+}
+//类似标签设置区域控件行为绑定，仅仅是简易复用，未控件化
+//包括：数组显示，文本渲染，typeahead等
+UI_List_Common.prototype.detail_array_control_bind = function (task,
+    fn_render,
+    fn_remove,
+    single,//是否只允许单独项
+    $text, $input, $btn,
+    source, matcher, sorter, updater, highlighter,
+    blur) {
+
+    var that = this;
+    var batch = $.isArray(task);
+
+    //设置指定区域的渲染方式
+    if (!batch && fn_render) {
+        task[fn_render] = function ($e, data) { that.detail_array_control_render($e, data); };
+    }
+    //显示编辑区域
+    $btn.unbind('click').click(function () {
+        $btn.hide();
+        if (single)
+            $text.hide();
+        $input.val(single ? $text.html() : '').show().focus();
+    });
+    //删除项
+    if (fn_remove) {
+        $text.unbind('click').click(function (e) {
+            var $el = $(e.target);
+            if ($el.hasClass('flag_remove')) {
+                var val = $el.attr('val');
+                //支持批量设置
+                if (batch) {
+                    for (var i = 0; i < task.length; i++)
+                        if (task[i].editable)
+                            task[i][fn_remove](val);
+                    //重新渲染$text
+                    that.renderBatchDetail(task);
+                }
+                else
+                    task[fn_remove](val);
+            }
+        });
+    }
+    //自动完成、搜索
+    var option = {
+        source: source,
+        matcher: matcher,
+        sorter: sorter
+    };
+    if (batch)
+        option.updater = function () {
+            var val = updater.apply(this, arguments);
+            //对于批量编辑变更时，重新render
+            that.renderBatchDetail(task);
+            if (single) {
+                $input.blur();
+                return val;
+            }
+            //TODO:ie下无效，批量无法连贯设置
+            $btn.hide();
+            $input.show().focus();
+            return '';//返回空则清空$input
+        }
+    else
+        option.updater = function () {
+            var val = updater.apply(this, arguments);
+            if (single) {
+                $input.blur();
+                return val;
+            }
+            return '';//返回空则清空$input
+        }
+    if (highlighter)
+        option.highlighter = highlighter;
+    $input.typeahead(option);
+    $input.unbind('blur').blur(function () {
+        setTimeout(function () {
+            $text.show();
+            $btn.show();
+            $input.hide().data('typeahead').hide();
+        }, 100);//为了让typehead click有效 时间间隔至少100ms以上
+        if (blur)
+            blur();
+    });
+}
+//类似标签设置区域控件渲染
+UI_List_Common.prototype.detail_array_control_render = function ($text, data, append) {
+    if (!append)
+        $text.empty();
+    var filter = {};
+    $.each(data, function (i, n) {
+        var id = n['id'] || n;
+        if (filter[id])
+            return;
+        else
+            filter[id] = true;
+        var $i = $('<span></span>');
+        //防止html/script注入
+        $i.text((n['name'] || n));
+        $i.append('&nbsp;<a style="color:#000;" class="flag_remove" val="'
+            + id
+            + '" title="'
+            + lang.remove_from_task
+            + '">x</a>');
+        $text.append($i).append('&nbsp;');
+    });
 }

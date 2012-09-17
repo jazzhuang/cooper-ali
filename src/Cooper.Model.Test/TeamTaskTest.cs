@@ -310,5 +310,251 @@ namespace Cooper.Model.Test
             task = this._teamTaskService.GetTask(task.ID);
             Assert.AreEqual(0, task.Comments.Count());
         }
+        [Test]
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void AddTag()
+        {
+            var account = this.CreateAccount();
+            var team = CreateSampleTeam();
+            var creatorMember = AddSampleMemberToTeam(account, team);
+            var task = new Task(creatorMember, team);
+            task.AddTag("程序设计");
+            task.AddTag(".NET");
+            task.AddTag(".net");
+            task.AddTag("∮   ∮；∮;");
+            task.AddTag("∮bb∮");
+            task.AddTag("∮∮ ∮b∮a∮");
+            task.AddTag("A ");
+            task.AddTag("∮∮ ∮)∮）∮）");
+            task.AddTag("∮∮ ∮)∮）∮)");
+            task.AddTag("001_Tag_001");
+            this._teamTaskService.Create(task);
+
+            this.Evict(task);
+
+            task = this._teamTaskService.GetTask(task.ID);
+            Assert.AreEqual(8, task.Tags.Count());
+
+            Assert.IsFalse(task.Tags.Any(x => x == ".NET"));
+            Assert.IsFalse(task.Tags.Any(x => x == "a"));
+            Assert.IsFalse(task.Tags.Any(x => x == "A "));
+            Assert.IsFalse(task.Tags.Any(x => x == "；"));
+            Assert.IsFalse(task.Tags.Any(x => x == "）"));
+
+            Assert.IsTrue(task.Tags.Any(x => x == "程序设计"));
+            Assert.IsTrue(task.Tags.Any(x => x == ".net"));
+            Assert.IsTrue(task.Tags.Any(x => x == ";"));
+            Assert.IsTrue(task.Tags.Any(x => x == "bb"));
+            Assert.IsTrue(task.Tags.Any(x => x == "A"));
+            Assert.IsTrue(task.Tags.Any(x => x == "b"));
+            Assert.IsTrue(task.Tags.Any(x => x == ")"));
+            Assert.IsTrue(task.Tags.Any(x => x == "001_Tag_001"));
+        }
+        [Test]
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void RemoveTag()
+        {
+            var account = this.CreateAccount();
+            var team = CreateSampleTeam();
+            var creatorMember = AddSampleMemberToTeam(account, team);
+            var task = new Task(creatorMember, team);
+            task.AddTag("程序设计");
+            task.AddTag(".NET");
+            task.AddTag(".net");
+            task.AddTag("∮   ∮；∮;");
+            task.AddTag("∮bb∮");
+            task.AddTag("∮∮ ∮b∮a∮");
+            task.AddTag("A");
+            task.AddTag("∮∮ ∮)∮）∮）");
+            task.AddTag("∮∮ ∮)∮）∮)");
+            task.AddTag("001_Tag_001");
+            this._teamTaskService.Create(task);
+
+            this.Evict(task);
+
+            task = this._teamTaskService.GetTask(task.ID);
+            Assert.AreEqual(8, task.Tags.Count());
+            Assert.IsFalse(task.Tags.Any(x => x == ".NET"));
+            Assert.IsFalse(task.Tags.Any(x => x == "；"));
+            Assert.IsFalse(task.Tags.Any(x => x == "a"));
+            Assert.IsFalse(task.Tags.Any(x => x == "）"));
+
+            Assert.IsTrue(task.Tags.Any(x => x == "程序设计"));
+            Assert.IsTrue(task.Tags.Any(x => x == ".net"));
+            Assert.IsTrue(task.Tags.Any(x => x == ";"));
+            Assert.IsTrue(task.Tags.Any(x => x == "bb"));
+            Assert.IsTrue(task.Tags.Any(x => x == "A"));
+            Assert.IsTrue(task.Tags.Any(x => x == "b"));
+            Assert.IsTrue(task.Tags.Any(x => x == ")"));
+            Assert.IsTrue(task.Tags.Any(x => x == "001_Tag_001"));
+
+            task.RemoveTag("）");
+            task.RemoveTag(".Net");
+            task.RemoveTag("∮a∮bba");
+            task.RemoveTag("∮；∮  b");
+            task.RemoveTag(" A ");
+
+            this._teamTaskService.Update(task);
+
+            this.Evict(task);
+
+            task = this._teamTaskService.GetTask(task.ID);
+            Assert.AreEqual(3, task.Tags.Count());
+            Assert.IsFalse(task.Tags.Any(x => x == ".net"));
+            Assert.IsFalse(task.Tags.Any(x => x == "A"));
+            Assert.IsFalse(task.Tags.Any(x => x == "b"));
+            Assert.IsFalse(task.Tags.Any(x => x == ";"));
+            Assert.IsFalse(task.Tags.Any(x => x == ")"));
+
+            Assert.IsTrue(task.Tags.Any(x => x == "程序设计"));
+            Assert.IsTrue(task.Tags.Any(x => x == "bb"));
+            Assert.IsTrue(task.Tags.Any(x => x == "001_Tag_001"));
+        }
+        [Test]
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void GetTags()
+        {
+            var account = this.CreateAccount();
+            var team = CreateSampleTeam();
+            var creatorMember = AddSampleMemberToTeam(account, team);
+            var task1 = new Task(creatorMember, team);
+            task1.AddTag("程序设计");
+            task1.AddTag(".NET");
+            task1.AddTag("ASP.NET");
+            task1.AddTag("001_Tag_001");
+            task1.MarkAsCompleted();
+            this._teamTaskService.Create(task1);
+            var task2 = new Task(creatorMember, team);
+            task2.AddTag("Mono");
+            task2.AddTag(".net");
+            task2.AddTag("JAVA");
+            task2.AddTag("JAVA.NET");
+            task2.AddTag("001_tag_001");
+            this._teamTaskService.Create(task2);
+
+            this.Evict(task1);
+            this.Evict(task2);
+
+            var tasks = this._teamTaskService.GetTasksByTag(team, ".net");
+            Assert.AreEqual(2, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains(".net", StringComparer.OrdinalIgnoreCase)));
+            tasks = this._teamTaskService.GetTasksByTag(team, "java");
+            Assert.AreEqual(1, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains("java", StringComparer.OrdinalIgnoreCase)));
+            tasks = this._teamTaskService.GetTasksByTag(team, "程序设计");
+            Assert.AreEqual(1, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains("程序设计", StringComparer.OrdinalIgnoreCase)));
+            tasks = this._teamTaskService.GetTasksByTag(team, "Mono");
+            Assert.AreEqual(1, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains("Mono", StringComparer.OrdinalIgnoreCase)));
+            tasks = this._teamTaskService.GetTasksByTag(team, "001_tag_001");
+            Assert.AreEqual(2, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains("001_tag_001", StringComparer.OrdinalIgnoreCase)));
+
+            tasks = this._teamTaskService.GetIncompletedTasksByTag(team, ".net");
+            Assert.AreEqual(1, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains(".net", StringComparer.OrdinalIgnoreCase)));
+            tasks = this._teamTaskService.GetIncompletedTasksByTag(team, "java");
+            Assert.AreEqual(1, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains("java", StringComparer.OrdinalIgnoreCase)));
+            tasks = this._teamTaskService.GetIncompletedTasksByTag(team, "程序设计");
+            Assert.AreEqual(0, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains("程序设计", StringComparer.OrdinalIgnoreCase)));
+            tasks = this._teamTaskService.GetIncompletedTasksByTag(team, "Mono");
+            Assert.AreEqual(1, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains("Mono", StringComparer.OrdinalIgnoreCase)));
+            tasks = this._teamTaskService.GetIncompletedTasksByTag(team, "001_tag_001");
+            Assert.AreEqual(1, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains("001_tag_001", StringComparer.OrdinalIgnoreCase)));
+
+            task1 = this._teamTaskService.GetTask(task1.ID);
+            task2 = this._teamTaskService.GetTask(task2.ID);
+
+            task1.RemoveTag(".net");
+            task2.RemoveTag("001_tag_001");
+            task2.RemoveTag("JAVA");
+
+            this._teamTaskService.Update(task1);
+            this._teamTaskService.Update(task2);
+
+            this.Evict(task1);
+            this.Evict(task2);
+
+            tasks = this._teamTaskService.GetTasksByTag(team, ".net");
+            Assert.AreEqual(1, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains(".net", StringComparer.OrdinalIgnoreCase)));
+            tasks = this._teamTaskService.GetTasksByTag(team, "java");
+            Assert.AreEqual(0, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains("java", StringComparer.OrdinalIgnoreCase)));
+            tasks = this._teamTaskService.GetTasksByTag(team, "程序设计");
+            Assert.AreEqual(1, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains("程序设计", StringComparer.OrdinalIgnoreCase)));
+            tasks = this._teamTaskService.GetTasksByTag(team, "Mono");
+            Assert.AreEqual(1, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains("Mono", StringComparer.OrdinalIgnoreCase)));
+            tasks = this._teamTaskService.GetTasksByTag(team, "001_tag_001");
+            Assert.AreEqual(1, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains("001_tag_001", StringComparer.OrdinalIgnoreCase)));
+
+            tasks = this._teamTaskService.GetIncompletedTasksByTag(team, ".net");
+            Assert.AreEqual(1, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains(".net", StringComparer.OrdinalIgnoreCase)));
+            tasks = this._teamTaskService.GetIncompletedTasksByTag(team, "java");
+            Assert.AreEqual(0, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains("java", StringComparer.OrdinalIgnoreCase)));
+            tasks = this._teamTaskService.GetIncompletedTasksByTag(team, "程序设计");
+            Assert.AreEqual(0, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains("程序设计", StringComparer.OrdinalIgnoreCase)));
+            tasks = this._teamTaskService.GetIncompletedTasksByTag(team, "Mono");
+            Assert.AreEqual(1, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains("Mono", StringComparer.OrdinalIgnoreCase)));
+            tasks = this._teamTaskService.GetIncompletedTasksByTag(team, "001_tag_001");
+            Assert.AreEqual(0, tasks.Count());
+            Assert.IsFalse(!tasks.All(x => x.Tags.Contains("001_tag_001", StringComparer.OrdinalIgnoreCase)));
+        }
+
+        [Test]
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void TrashTaskTest()
+        {
+            var account = this.CreateAccount();
+            var team = CreateSampleTeam();
+            var creatorMember = AddSampleMemberToTeam(account, team);
+            var task = new Task(creatorMember, team);
+
+            this._teamTaskService.Create(task);
+
+            var taskId = task.ID;
+
+            this.Evict(task);
+
+            task = this._teamTaskService.GetTask(task.ID);
+
+            this._teamTaskService.Delete(task);
+
+            this.Evict(task);
+
+            task = this._teamTaskService.GetTask(task.ID);
+            Assert.IsNull(task);
+
+            var tasks = this._teamTaskService.GetTasksByAccount(team, account);
+            Assert.AreEqual(0, tasks.Count());
+
+            tasks = this._teamTaskService.GetTrashedTasks(team);
+            Assert.AreEqual(1, tasks.Count());
+            Assert.AreEqual(taskId, tasks.First().ID);
+
+            task = tasks.First();
+            task.MarkAsUnTrashed();
+            this._teamTaskService.Update(task);
+
+            this.Evict(task);
+
+            task = this._teamTaskService.GetTask(task.ID);
+            Assert.IsNotNull(task);
+
+            tasks = this._teamTaskService.GetTrashedTasks(team);
+            Assert.AreEqual(0, tasks.Count());
+        }
     }
 }

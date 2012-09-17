@@ -73,6 +73,7 @@ namespace Cooper.Web.Controllers
                 t.DueTime = o.DueTime.HasValue ? o.DueTime.Value.Date.ToString("yyyy-MM-dd") : null;
                 t.Priority = (int)o.Priority;
                 t.IsCompleted = o.IsCompleted;
+                t.Tags = o.Tags.ToArray();
                 filter(o, t);
                 return t;
             }).ToArray();
@@ -118,6 +119,26 @@ namespace Cooper.Web.Controllers
                 ? _serializer.JsonDeserialize<Sort[]>(a.GetProfile(key))
                 : _emptySorts;
         }
+        protected void RepairIndexs(Sort sort, IDictionary<string, TaskInfo> tasks)
+        {
+            var temp = (sort.Indexs ?? new string[0]).ToList();
+            if (this._log.IsDebugEnabled)
+                this._log.DebugFormat("原始排序为{0}|{1}|{2}|{3}", sort.By, sort.Key, sort.Name, string.Join(",", temp));
+            //移除索引中不存在的项
+            temp.RemoveAll(o => string.IsNullOrWhiteSpace(o) || !tasks.ContainsKey(o));
+            if (this._log.IsDebugEnabled)
+                this._log.DebugFormat("过滤后排序为{0}", string.Join(",", temp));
+            //合并未在索引中出现的项
+            sort.Indexs = temp.Union(tasks.Select(o => o.Value.ID)).ToArray();
+            if (this._log.IsDebugEnabled)
+                this._log.DebugFormat("合并后排序为{0}", string.Join(",", sort.Indexs));
+        }
+        protected IDictionary<string, TaskInfo> Parse(TaskInfo[] tasks, Func<TaskInfo, bool> filter)
+        {
+            return tasks.Where(filter)
+                .Select(o => new KeyValuePair<string, TaskInfo>(o.ID, o))
+                .ToDictionary(o => o.Key, o => o.Value);
+        }
         /// <summary>用于接收终端的变更同步数据
         /// </summary>
         /// <param name="changes">变更数据 changelog[]</param>
@@ -131,7 +152,7 @@ namespace Cooper.Web.Controllers
             , string by
             , string sorts
             , Func<Task> ifNew
-            , Action<Task> verify
+            , Action<Task, ChangeLog> verify
             , Func<bool> isPersonalSorts
             , Func<string, string> getSortKey
             , Action<string> saveSorts)
@@ -166,13 +187,18 @@ namespace Cooper.Web.Controllers
                     t.MarkAsCompleted();
                 else
                     t.MarkAsInCompleted();
+            else if (n.Equals("tags"))
+                if (c.Type == ChangeType.Insert)
+                    t.AddTag(c.Value);
+                else if (c.Type == ChangeType.Delete)
+                    t.RemoveTag(c.Value);
         }
 
         private void ApplyChanges(Account account
             , ChangeLog[] list
             , IDictionary<string, string> idChanges
             , Func<Task> ifNew
-            , Action<Task> verify)
+            , Action<Task, ChangeLog> verify)
         {
             foreach (var c in list)
             {
@@ -201,16 +227,15 @@ namespace Cooper.Web.Controllers
                     }
 
                     //执行变更权限验证
-                    verify(t);
+                    verify(t, c);
 
                     //UNDONE:根据最后更新时间判断变更记录有效性，时间间隔过长的变更会被丢弃?
                     //由于LastUpdateTime粒度过大，不适合这种细粒度变更比对，需要引入Merge机制来处理文本更新合并问题
                     DateTime createTime;
                     if (DateTime.TryParse(c.CreateTime, out createTime))
                         if (t.LastUpdateTime - createTime > TimeSpan.FromMinutes(5))
-                            if (this._log.IsInfoEnabled)
-                                this._log.InfoFormat("变更创建时间{0}与任务最后更新时间{1}的隔间过长", c.CreateTime, t.LastUpdateTime);
-                    
+                            this._log.WarnFormat("变更创建时间{0}与任务最后更新时间{1}的隔间过长", c.CreateTime, t.LastUpdateTime);
+
                     if (this.IsTaskDelete(c))
                         this._taskService.Delete(t);
                     else
@@ -223,7 +248,7 @@ namespace Cooper.Web.Controllers
                 }
                 catch (Exception e)
                 {
-                    this._log.Error(string.Format("执行变更时异常：{0}|{1}|{2}", c.ID, c.Name, c.Value), e);
+                    this._log.Error(string.Format("执行变更时异常：{0}|{1}|{2}|{3}", c.Type, c.ID, c.Name, c.Value), e);
                 }
             }
         }
@@ -236,7 +261,7 @@ namespace Cooper.Web.Controllers
             , string sorts
             , IDictionary<string, string> idChanges
             , Func<bool> isPersonalSorts
-            , Func<string, string> getSortKey
+            , Func<string, string> getPersonalSortKey
             , Action<string> saveSorts)
         {
             //没有变更则无需提交排序数据
@@ -259,7 +284,7 @@ namespace Cooper.Web.Controllers
                 if (isPersonalSorts())
                 {
                     //更新排序信息至用户设置
-                    account.SetProfile(getSortKey(by), d);
+                    account.SetProfile(getPersonalSortKey(by), d);
                     this._accountService.Update(account);
                 }
                 else
@@ -275,26 +300,6 @@ namespace Cooper.Web.Controllers
             }
         }
 
-        private void RepairIndexs(Sort sort, IDictionary<string, TaskInfo> tasks)
-        {
-            var temp = (sort.Indexs ?? new string[0]).ToList();
-            if (this._log.IsDebugEnabled)
-                this._log.DebugFormat("原始排序为{0}|{1}|{2}|{3}", sort.By, sort.Key, sort.Name, string.Join(",", temp));
-            //移除索引中不存在的项
-            temp.RemoveAll(o => string.IsNullOrWhiteSpace(o) || !tasks.ContainsKey(o));
-            if (this._log.IsDebugEnabled)
-                this._log.DebugFormat("过滤后排序为{0}", string.Join(",", temp));
-            //合并未在索引中出现的项
-            sort.Indexs = temp.Union(tasks.Select(o => o.Value.ID)).ToArray();
-            if (this._log.IsDebugEnabled)
-                this._log.DebugFormat("合并后排序为{0}", string.Join(",", sort.Indexs));
-        }
-        private IDictionary<string, TaskInfo> Parse(TaskInfo[] tasks, Func<TaskInfo, bool> filter)
-        {
-            return tasks.Where(filter)
-                .Select(o => new KeyValuePair<string, TaskInfo>(o.ID, o))
-                .ToDictionary(o => o.Key, o => o.Value);
-        }
         private static int _flag = 0;
         private void TryFail()
         {
@@ -329,6 +334,9 @@ namespace Cooper.Web.Controllers
         /// <summary>是否完成
         /// </summary>
         public bool IsCompleted { get; set; }
+        /// <summary>标签列表
+        /// </summary>
+        public string[] Tags { get; set; }
 
         //额外属性
 

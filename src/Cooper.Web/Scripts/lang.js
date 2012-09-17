@@ -16,6 +16,7 @@ lang.comming_soon = '近期推出';
 lang.confirm_delete_taskFolder = '确定要删除当前任务表？任务表中的任务也将一起删除';
 lang.share_description = '\n\n - 我的任务 - Work IN Cooper';
 lang.remove_from_project = '移除该项目';
+lang.remove_from_task = '移除这项设置';
 
 lang.my_task = '个人任务';
 lang.my_profile = '我的设置';
@@ -49,6 +50,8 @@ lang.comment = '评论';
 lang.comment_must_more_than_5 = '评论字数至少5个字符';
 lang.comment_must_less_than_500 = '评论字数不能超过500';
 lang.create_task = '创建了任务';
+lang.tags = '标签';
+lang.remove_tag_from_task = '移除该标签';
 
 lang.my_task = '个人任务';
 lang.my_profile = '我的设置';

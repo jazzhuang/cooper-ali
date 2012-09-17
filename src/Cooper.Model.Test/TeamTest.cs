@@ -68,6 +68,22 @@ namespace Cooper.Model.Test
 
             Assert.IsNull(team3);
         }
+        [Test]
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void TeamExtensionsTest()
+        {
+            var team = CreateSampleTeam();
+            this.Evict(team);
+            team = _teamService.GetTeam(team.ID);
+
+            team.Settings["key"] = "abc";
+            this._teamService.Update(team);
+
+            this.Evict(team);
+
+            team = _teamService.GetTeam(team.ID);
+            Assert.AreEqual("abc", team.Settings["key"]);
+        }
 
         [Test]
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
@@ -350,12 +366,18 @@ namespace Cooper.Model.Test
         }
         [Test]
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
-        public void ExtensionsTest()
+        public void ProjectExtensionsTest()
         {
             var team = CreateSampleTeam();
-
             var project = AddSampleProjectToTeam(team);
-            project["key"] = "abc";
+
+            this.Evict(project);
+            this.Evict(team);
+
+            team = _teamService.GetTeam(team.ID);
+            project = team.GetProject(project.ID);
+
+            project.Settings["key"] = "abc";
             this._teamService.Update(team);
 
             this.Evict(project);
@@ -363,7 +385,7 @@ namespace Cooper.Model.Test
 
             team = _teamService.GetTeam(team.ID);
             project = team.GetProject(project.ID);
-            Assert.AreEqual("abc", project["key"]);
+            Assert.AreEqual("abc", project.Settings["key"]);
         }
         [Test]
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
@@ -510,6 +532,42 @@ namespace Cooper.Model.Test
             email = "abc@" + RandomString() + ".123";
             member = this._teamService.AddFullMember(RandomString(), email, team);
             Assert.IsTrue(member.ID > 0);
+        }
+
+        [Test]
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void GetTags()
+        {
+            var account = this.CreateAccount();
+            var team = CreateSampleTeam();
+            var creatorMember = AddSampleMemberToTeam(account, team);
+            var task1 = new Task(creatorMember, team);
+            task1.AddTag("程序设计");
+            task1.AddTag(".NET");
+            task1.AddTag("ASP.NET");
+            task1.AddTag("001_Tag_001");
+            task1.MarkAsCompleted();
+            this._teamTaskService.Create(task1);
+            var task2 = new Task(creatorMember, team);
+            task2.AddTag("Mono");
+            task2.AddTag(".net");
+            task2.AddTag("JAVA");
+            task2.AddTag("JAVA.NET");
+            task2.AddTag("001_tag_001");
+            this._teamTaskService.Create(task2);
+
+            this.Evict(task1);
+            this.Evict(task2);
+
+            var tags = this._teamService.GetTagsByTeam(team);
+            Assert.AreEqual(7, tags.Count());
+            Assert.IsTrue(tags.Any(x => x == "程序设计"));
+            Assert.IsTrue(tags.Any(x => x == ".NET"));
+            Assert.IsTrue(tags.Any(x => x == "ASP.NET"));
+            Assert.IsTrue(tags.Any(x => x == "001_Tag_001"));
+            Assert.IsTrue(tags.Any(x => x == "Mono"));
+            Assert.IsTrue(tags.Any(x => x == "JAVA"));
+            Assert.IsTrue(tags.Any(x => x == "JAVA.NET"));
         }
     }
 }

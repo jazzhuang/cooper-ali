@@ -66,6 +66,18 @@
                         </tr>
                         <tr>
                             <td class="detail-item">
+                                @this.Lang().tags
+                            </td>
+                            <td class="detail-content">
+                                <span id="tags"></span>
+                                <input id="tags_input" type="text" class="input-small" style="display: none" maxlength="15"/>
+                                <button id="tags_btn" class="btn btn-mini">
+                                    <i class="icon-plus"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="detail-item">
                                 @this.Lang().dueTime
                             </td>
                             <td class="detail-content">
@@ -192,8 +204,8 @@
             $('.btn').tooltip({ placement: 'bottom', delay: 800 });
 
             //TODO:仅在变更时处理
-            if (sys_versionFlag == 'release')
-                window.onbeforeunload = function () { return 'Cooper Task'; };
+            //if (sys_versionFlag == 'release')
+                //window.onbeforeunload = function () { return 'Cooper Task'; };
         });
         function resize() {
             $('.todolist_wrapper').height($(window).height() - 170);

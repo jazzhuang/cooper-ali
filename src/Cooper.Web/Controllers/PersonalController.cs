@@ -175,7 +175,7 @@ namespace Cooper.Web.Controllers
                         o.SetTaskFolder(folder);
                     return o;
                 }
-                , o =>
+                , (o, c) =>
                 {
                     var task = o as PersonalTask;
                     //只有创建者才能更新个人任务
@@ -183,7 +183,7 @@ namespace Cooper.Web.Controllers
                 }
                 , () => folder == null
                 , o => o
-                , o => { folder[by] = o; this._taskFolderService.Update(folder); }));
+                , o => { folder.Settings[by] = o; this._taskFolderService.Update(folder); }));
         }
 
         protected override void ApplyUpdate(Task t, ChangeLog c)
@@ -248,8 +248,8 @@ namespace Cooper.Web.Controllers
         }
         private Sort[] GetSorts(TaskFolder a, string by)
         {
-            return !string.IsNullOrWhiteSpace(a[by])
-                ? _serializer.JsonDeserialize<Sort[]>(a[by])
+            return !string.IsNullOrWhiteSpace(a.Settings[by])
+                ? _serializer.JsonDeserialize<Sort[]>(a.Settings[by])
                 : _emptySorts;
         }
         private void Prepare()

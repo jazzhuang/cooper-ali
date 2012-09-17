@@ -8,7 +8,7 @@
     <!--顶部按钮区域-->
     <div style="padding: 10px 5px 0;">
         <ul class="nav nav-tabs">
-            <li class="dropdown active"><a href="javascript:;">{{team.name}} {{project.name}} {{member.name}}</a></li>
+            <li class="dropdown active"><a href="javascript:;">{{team.name}} {{project.name}} {{member.name}} {{tag}}</a></li>
             <li class="dropdown pull-right"><a href="javascript:;" class="dropdown-toggle" data-toggle="dropdown">
                 {{lang.more}} <b class="caret"></b></a>
                 <ul class="dropdown-menu">
@@ -22,8 +22,8 @@
             <div class="btn-group pull-left" data-toggle="buttons-radio">
                 <button class="btn active flag_byPriority" title="{{lang.by_priority_title}}">
                     <i class="icon-time"></i>{{lang.priority}}</button>
-                <!--<button class="btn flag_byAssignee" title="{{lang.by_assignee_title}}" ng-show="project!=null">
-                    <i class="icon-user"></i>{{lang.assignee}}</button>-->
+                <button class="btn flag_byAssignee" title="{{lang.by_assignee_title}}" ng-show="project!=null">
+                    <i class="icon-user"></i>{{lang.assignee}}</button>
                 <button class="btn flag_byDueTime" title="{{lang.by_dueTime_title}}">
                     <i class="icon-bell"></i>{{lang.time}}</button>
             </div>
@@ -50,8 +50,9 @@
     </div>
     <!--快捷键说明-->
     <div style="border-top: 1px #ddd solid; padding: 10px;">
-        <span class="label label-info">↵ {{lang.addNew}}</span> <span class="label label-success">
-            Ctrl+↵ {{lang.complete}}</span> <span class="label ">Ctrl+↓ {{lang.sort}}</span>
+        <span class="label label-info">↵ {{lang.addNew}}</span> 
+        <span class="label label-success">Ctrl+↵ {{lang.complete}}</span> 
+        <span class="label ">Ctrl+↓ {{lang.sort}}</span>
         <span class="label label-inverse">Ctrl/Shift+{{lang.mouse}} {{lang.select_inverse}}</span>
         <span class="label label-warning">Backspace {{lang.del}}</span>
     </div>
@@ -113,8 +114,10 @@
                             <span id="assignee"></span>
                         </td>
                         <td class="cell_string">
-                            <input id="subject" value="{subject}" maxlength="500" />
+                            <input id="subject" value="" maxlength="500" />
                             <div>
+                                <span id="tags">
+                                </span>
                                 <span id="dueTimeLabel" class="cell_duetime"></span><span ng-show="mini" class="icon-chevron-right"
                                     style="cursor: pointer" title="{{lang.detail}}" onclick="$('#main').hide();$('#detail_wrapper').show('slide', {direction: 'right'})">
                                 </span>
@@ -150,7 +153,7 @@
                     <tbody>
                         <tr>
                             <td colspan="2">
-                                <input id="subject" type="text" class="detail-title" value="{subject}" />
+                                <input id="subject" type="text" class="detail-title" value="{subject}" maxlength="500"/>
                             </td>
                         </tr>
                         <tr>
@@ -166,7 +169,6 @@
                                 <div id="urls" class="btn-group">
                                     <button class="btn" style="width: 80%; height: 28px; text-align: left; overflow: hidden;
                                         word-break: break-all; text-overflow: ellipsis;">
-                                        <i class="icon-file"></i><a target="_blank"></a>
                                     </button>
                                     <button class="btn dropdown-toggle" data-toggle="dropdown">
                                         <span class="caret"></span>
@@ -181,8 +183,8 @@
                                 {{lang.assignee}}
                             </td>
                             <td class="detail-content">
-                                <input id="assignee_input" type="text" class="input-small" style="display: none" />
                                 <span id="assignee"></span>
+                                <input id="assignee_input" type="text" class="input-small" style="display: none" />
                                 <button id="assignee_btn" class="btn btn-mini">
                                     <i class="icon-pencil"></i>
                                 </button>
@@ -216,6 +218,18 @@
                                         <i class="icon-pause" priority="2"></i>
                                     </button>
                                 </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="detail-item">
+                                {{lang.tags}}
+                            </td>
+                            <td class="detail-content">
+                                <span id="tags"></span>
+                                <input id="tags_input" type="text" class="input-small" style="display: none" maxlength="15"/>
+                                <button id="tags_btn" class="btn btn-mini">
+                                    <i class="icon-plus"></i>
+                                </button>
                             </td>
                         </tr>
                         <tr>
@@ -285,6 +299,30 @@
                             <td colspan="2" id="subject">
                             </td>
                         </tr>
+                        <tr ng-show="team!=null">
+                            <td class="detail-item">
+                                {{lang.assignee}}
+                            </td>
+                            <td class="detail-content">
+                                <span id="assignee"></span>
+                                <input id="assignee_input" type="text" class="input-small" style="display: none" />
+                                <button id="assignee_btn" class="btn btn-mini">
+                                    <i class="icon-pencil"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr ng-show="team!=null">
+                            <td class="detail-item">
+                                {{lang.project}}
+                            </td>
+                            <td class="detail-content">
+                                <span id="projects"></span>
+                                <input id="projects_input" type="text" class="input-small" style="display: none" />
+                                <button id="projects_btn" class="btn btn-mini">
+                                    <i class="icon-plus"></i>
+                                </button>
+                            </td>
+                        </tr>
                         <tr>
                             <td class="detail-item">
                                 {{lang.priority}}
@@ -301,6 +339,18 @@
                                         <i class="icon-pause" priority="2"></i>
                                     </button>
                                 </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="detail-item">
+                                {{lang.tags}}
+                            </td>
+                            <td class="detail-content">
+                                <span id="tags"></span>
+                                <input id="tags_input" type="text" class="input-small" style="display: none" maxlength="15"/>
+                                <button id="tags_btn" class="btn btn-mini">
+                                    <i class="icon-plus"></i>
+                                </button>
                             </td>
                         </tr>
                         <tr>

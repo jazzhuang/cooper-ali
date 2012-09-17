@@ -86,7 +86,7 @@ UI_List_Priority.prototype.render = function (b) {//b=是否显示归档区域
 }
 UI_List_Priority.prototype.archiveTasks = function () {
     var base = this;
-    //TODO:归档时按完成时间排序？
+    //归档时按完成时间排序？
     this.eachTask(function (t) {
         if (t.isCompleted())
             base.archive.el().append(t.el());
@@ -115,7 +115,7 @@ UI_List_Priority.prototype.appendTask = function (p) {
     if ($row != null && !this._isArchivedRow($row)) {
         var active = this.getTask($row);
         this._appendTaskToRow($row, t, active);
-        t['data']['priority'] = active.priority(); //为避免新增任务生成变更记录，需调整成其他更合理方式
+        //t['data']['priority'] = active.priority(); //为避免新增任务生成变更记录，需调整成其他更合理方式
         t.setPriority(active.priority());
         this.getSortByKey(t.priority()).flush();
     }

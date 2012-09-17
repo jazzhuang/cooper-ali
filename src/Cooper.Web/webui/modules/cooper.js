@@ -8,6 +8,7 @@
 "use strict"
 
 var cooper = angular.module('cooper', []);
+var template_flag_tasklist = '';
 
 (function () {
     if (!window.url_root)
@@ -44,16 +45,19 @@ var cooper = angular.module('cooper', []);
         memberPath: function (t, m) { if (t && m) return url_root + prefixPath + t.id + '/m/' + m.id; },
         
         project: function (t, p) { if (t && p) return url_root + prefix + t.id + '/p/' + p.id; },
-        projectPath: function (t, p) { if (t && p) return url_root + prefixPath + t.id + '/p/' + p.id; }
+        projectPath: function (t, p) { if (t && p) return url_root + prefixPath + t.id + '/p/' + p.id; },
+
+        tag: function (t, tag) { if (t && tag) return url_root + prefix + t.id + '/tag/' + tag; },
+        tagPath: function (t, tag) { if (t && tag) return url_root + prefixPath + t.id + '/tag/' + escape(tag); }
     });
 
     //当前路由参数[obsolete]
-    cooper.value('params', {
+    /*cooper.value('params', {
         taskFolderId: 0,
         teamId: currentTeamId,
         projectId: currentProjectId,
         memberId: currentMemberId
-    });
+    });*/
     //当前用户
     cooper.value('account', currentAccount);
 
@@ -61,7 +65,7 @@ var cooper = angular.module('cooper', []);
         '$routeProvider',
         '$locationProvider',
         function ($routeProvider, $locationProvider) {
-            var url = url_root_webui + '/task/list.htm';
+            var url = url_root_webui + '/task/list.htm?_=' + template_flag_tasklist;
             $routeProvider.
             when('/t', {
                 templateUrl: url,
@@ -79,6 +83,10 @@ var cooper = angular.module('cooper', []);
                 templateUrl: url,
                 controller: MainCtrl
             }).
+            when('/t/:teamId/tag/:tag', {
+                templateUrl: url,
+                controller: MainCtrl
+            }).
             otherwise({
                 redirectTo: '/t/0'
             });
@@ -86,3 +94,4 @@ var cooper = angular.module('cooper', []);
         }
     ]);
 })();
+//在此覆盖template_flag_tasklist

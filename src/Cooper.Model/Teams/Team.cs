@@ -15,6 +15,7 @@ namespace Cooper.Model.Teams
     {
         private IList<Member> _members = new List<Member>();
         private IList<Project> _projects = new List<Project>();
+        private ExtensionDictionary _settings;
 
         /// <summary>获取团队名称
         /// </summary>
@@ -29,8 +30,21 @@ namespace Cooper.Model.Teams
         /// </summary>
         public IEnumerable<Project> Projects { get { return _projects; } }
 
+        /// <summary>自定义扩展信息字典
+        /// </summary>
+        public ExtensionDictionary Settings
+        {
+            get
+            {
+                if (this._settings == null)
+                    this._settings = new ExtensionDictionary();
+                return _settings;
+            }
+        }
+
         protected Team() { this.CreateTime = DateTime.Now; }
-        public Team(string name) : this()
+        public Team(string name)
+            : this()
         {
             this.SetName(name);
         }
@@ -51,14 +65,14 @@ namespace Cooper.Model.Teams
         {
             return _members.SingleOrDefault(x => x.Email == email);
         }
-		/// <summary>根据账号获取成员
+        /// <summary>根据账号获取成员
         /// </summary>
         /// <param name="account"></param>
         /// <returns></returns>
-		public Member GetMember(Account account)
-		{
-			return this._members.SingleOrDefault (x => x.AssociatedAccountId != null && x.AssociatedAccountId.Value == account.ID);
-		}
+        public Member GetMember(Account account)
+        {
+            return this._members.SingleOrDefault(x => x.AssociatedAccountId != null && x.AssociatedAccountId.Value == account.ID);
+        }
         /// <summary>根据项目标识获取项目
         /// </summary>
         /// <param name="id"></param>

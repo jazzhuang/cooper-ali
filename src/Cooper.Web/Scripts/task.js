@@ -23,7 +23,7 @@ Task.prototype = {
             'priority': t['Priority'] != undefined ? t['Priority'] : 0, //0=today 1=upcoming 2=later priority 总是以string使用
             'dueTime': t['DueTime'] != undefined && t['DueTime'] != null && t['DueTime'] != '' ? this._parseDate(t['DueTime']) : null,
             'isCompleted': t['IsCompleted'] != undefined ? t['IsCompleted'] : false,
-            'tags': [],
+            'tags': t['Tags'] || t['tags'] || [],
             //team模块相关
             //TODO:移植到扩展模块？
             'creator': t['Creator'] != undefined ? this._mapMember(t['Creator']) : null,
@@ -35,8 +35,12 @@ Task.prototype = {
         this.$el_row = this._generateItem(this['data']);
         this.$el_detail = null;
 
-        if (debuger.isDebugEnable)
-            this._getRowEl('subject').attr('placeholder', '#' + this.id());
+        try{
+            if (debuger.isDebugEnable)
+                this._getRowEl('subject').attr('placeholder', '#' + this.id());
+        } catch (e) {
+            debuger.error('placeholder not support', e);
+        }
     },
     _mapMember: function (n) {
         return {
@@ -85,6 +89,7 @@ Task.prototype = {
     _addInsertChange: function (k, i, b) {
         this._addChange(k + i, { 'Name': k, 'Value': i, 'Type': 2 }, b);
     },
+    //b=是否忽略可编辑性判断，部分变更允许对非可编辑状态的任务进行，如comment
     _addChange: function (k, c, b) {
         c['ID'] = this.id();
         //变更列表，用于提交到server
@@ -99,10 +104,13 @@ Task.prototype = {
     },
     ///////////////////////////////////////////////////////////////////////////////
     renderRow: function () {
+        //ie8下首次_generateItem导致内容显示截断
+        this.setSubject(this.subject(),true);
         this.setCompleted(this.isCompleted());
         this.setPriority(this.priority());
         this.setDueTime(this.due());
         this.setAssignee(this.assignee());
+        this.setTags(this.tags());
         this.setEditable(this.editable);
     },
     renderDetail: function () {
@@ -123,16 +131,21 @@ Task.prototype = {
         this.setDetail_Assignee(this.assignee());
         this.setDetail_Projects(this.projects());
         this.setDetail_Comments(this.comments());
+        this.setDetail_Tags(this.tags());
+        //设置编辑状态
         this.setDetail_Editable(this.editable);
         //设置url快捷链接区域 临时方案
         var $urls = this.$el_detail.find('#urls');
         $urls.find('ul').empty();
         var i = 0;
         this.get('body').replace(/[http|https|ftp]+:\/\/\S*/ig, function (m) {
+            var href = m.substring(0, 30) + '...';
             if (i++ == 0)
-                $urls.find('button:first a').attr('href', m).attr('title', m).html(m);
+                $urls.find('button:first')
+                    .unbind('click').click(function () { window.open(m); })
+                    .html('<i class="icon-file"></i> <a>' + href + '</a>');
             else
-                $urls.find('ul').append('<li><a target="_blank" href="' + m + '" title="' + m + '">' + m.substring(0, 30) + '...</a></li>');
+                $urls.find('ul').append('<li><a target="_blank" href="' + m + '" title="' + m + '">' + href + '</a></li>');
         });
         $urls.parents('tr')[i == 0 ? 'hide' : 'show']();
         $urls.find('button:eq(1)')[i == 1 ? 'hide' : 'show']();
@@ -189,14 +202,21 @@ Task.prototype = {
     assignee: function () { return this.get('assignee'); },
     projects: function () { return this.get('projects'); },
     comments: function () { return this.get('comments'); },
+    tags: function () { return this.get('tags'); },
     ///////////////////////////////////////////////////////////////////////////////
     //属性以及ui设置
     setId: function (i) {
         this['data']['id'] = i;
         this.$el_row.attr('id', i);
         this.setDetail_Id(i);
-        if (debuger.isDebugEnable)
-            this._getRowEl('subject').attr('placeholder', '#' + this.id());
+
+        try{
+            if (debuger.isDebugEnable)
+                //ie7以及以下没有placeholder属性
+                this._getRowEl('subject').attr('placeholder', '#' + this.id());
+        } catch (e) {
+            debuger.error('placeholder not support', e);
+        }
     },
     setIndex: function (i) { this._getRowEl('index').html(i); },
     setSubject: function (s, f) {
@@ -242,13 +262,14 @@ Task.prototype = {
         //优化用户化文本显示
         $e.html(today == date ? lang.today : this._parseDateString(t));
         //过期标记
-        this._setClass($e, today >= date, 'cell_duetime_expired');
+        this._setClass($e, !this.isCompleted() && today >= date, 'cell_duetime_expired');
+        this._setClass($e, this.isCompleted(), 'cell_duetime_completed');
         this.setDetail_DueTime(t);
     },
     setEditable: function (b) {
         this.editable = b;
         //使用keyup来屏蔽变更
-        //设置readonly会导致del事件无法在list区域处理的问题
+        //HACK:设置readonly会导致del事件无法在list区域处理的问题
         if (!this.editable)
             this._getRowEl('subject').css('cursor', 'not-allowed');
         //.attr('readonly', !this.editable);
@@ -286,6 +307,42 @@ Task.prototype = {
             body: body,
             createTime: moment().format('YYYY-MM-DD HH:mm:ss')
         }]));
+    },
+    setTags: function (tags) {
+        if (!tags) return;
+        var k = 'tags';
+        this['data'][k] = tags; //直接更新tags数组
+        //渲染row_task
+        this._getRowEl(k)[tags.length != 0 ? 'show' : 'hide']().empty();
+        var color = [
+            'label-info',
+            'label-warning',
+            'label-important',
+            'label-success',
+            'label-inverse',
+            'label'];
+        for (var i = 0; i < tags.length; i++) {
+            var $i = $('<span class="label '
+                //+ color[1]//UNDONE:色调过于混乱？
+                + color[i % color.length]
+                + '"></span> ');
+            var max = i == 3;
+            var t = max ? '...' : tags[i];
+            //防止html/script注入
+            this._getRowEl(k).append($i.text(t)).append('&nbsp;');
+            if (max) break;
+        }
+        //渲染详情
+        this.setDetail_Tags(tags);
+    },
+    addTag: function (t) {
+        if ($.trim(t) == '') return;
+        this._addInsertChange('tags', t);
+        this.setTags($.merge($.grep(this.tags(), function (n, i) { return n.toLowerCase() != t.toLowerCase(); }), [t]));
+    },
+    removeTag: function (t) {
+        this._addDeleteChange('tags', t);
+        this.setTags($.grep(this.tags(), function (n, i) { return n.toLowerCase() != t.toLowerCase(); }));
     },
     ///////////////////////////////////////////////////////////////////////////////
     //detail设置
@@ -356,10 +413,16 @@ Task.prototype = {
         this._getDetailEl('body').attr('disabled', !this.editable);
         this._getDetailEl('dueTime').attr('disabled', !this.editable);
         this._getDetailEl('priority').find('button').attr('disabled', !this.editable);
+        this._getDetailEl('tags').find('.flag_remove')[this.editable ? 'show' : 'hide']();
+        this._getDetailEl('tags_btn')[this.editable ? 'show' : 'hide']();
         this._getDetailEl('assignee_btn')[this.editable ? 'show' : 'hide']();
-        this._getDetailEl('projects').find('.flag_removeProject')[this.editable ? 'show' : 'hide']();
+        this._getDetailEl('projects').find('.flag_remove')[this.editable ? 'show' : 'hide']();
         this._getDetailEl('projects_btn')[this.editable ? 'show' : 'hide']();
-        this._getDetailEl('assignee_btn')[this.editable ? 'show' : 'hide']();
+    },
+    setDetail_Tags: function (tags) {
+        if (!this.$el_detail || !tags) return;
+        if (this.render_detail_tags)
+            this.render_detail_tags(this._getDetailEl('tags'), tags);
     }
 }
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -368,9 +431,9 @@ var Sort = function () { this._init.apply(this, arguments); }
 Sort.prototype = {
     $el_region: null,
     _init: function () {
-        this['by'] = arguments[0];
-        this['key'] = arguments[1]; //0,1,2,prj1,team1
-        this['name'] = arguments[2]; //今天、稍后、迟些、项目1、团队1
+        this['by'] = arguments[0];//排序依据，对应task属性，如：priority，assignee
+        this['key'] = arguments[1]; //0,1,2,{id:1,name:'wsky'}
+        this['name'] = arguments[2]; //今天、稍后、迟些、项目1、团队1、wsky
         this['idx'] = arguments[3]; //[0,1,2,4]
         this.$el_region = $(render($('#tmp_region').html(), this));
         this._clearRegion();
@@ -425,7 +488,8 @@ Sort.prototype = {
         var $els = this._getRows();
         var ary = new Array($els.length);
         $els.each(function (i, n) { ary[i] = $(n).attr('id'); });
-        this['idx'] = ary; //$.grep(ary, function (n) { return n != '' && n != null });
+        //this['idx'] = ary;
+        this['idx'] = $.grep(ary, function (n) { return n.indexOf('temp_') < 0; });
         return this['idx'];
     },
     append: function (t, b) { this._append(t.el()); this.flush(b); }, //不可this.flush(true)

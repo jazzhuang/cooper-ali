@@ -45,6 +45,18 @@ namespace Cooper.Model.Teams
         /// <param name="account"></param>
         /// <returns></returns>
         IEnumerable<Task> GetIncompletedTasksByAccount(Team team, Account account);
+        /// <summary>获取指定团队中指定Tag相关的任务
+        /// </summary>
+        /// <param name="team"></param>
+        /// <param name="tag"></param>
+        /// <returns></returns>
+        IEnumerable<Task> GetTasksByTag(Team team, string tag);
+        /// <summary>获取指定团队中指定Tag相关的未完成的任务
+        /// </summary>
+        /// <param name="team"></param>
+        /// <param name="tag"></param>
+        /// <returns></returns>
+        IEnumerable<Task> GetIncompletedTasksByTag(Team team, string tag);
         /// <summary>获取指定项目的所有任务
         /// </summary>
         /// <param name="project"></param>
@@ -65,6 +77,11 @@ namespace Cooper.Model.Teams
         /// <param name="member"></param>
         /// <returns></returns>
         IEnumerable<Task> GetIncompletedTasksByMember(Member member);
+        /// <summary>获取指定团队内已废弃的任务
+        /// </summary>
+        /// <param name="team"></param>
+        /// <returns></returns>
+        IEnumerable<Task> GetTrashedTasks(Team team);
     }
     /// <summary>团队任务领域服务
     /// </summary>
@@ -101,9 +118,10 @@ namespace Cooper.Model.Teams
         [Transaction(TransactionMode.Requires)]
         void ITaskService.Delete(Task task)
         {
-            _repository.Remove(task);
+            task.MarkAsTrashed();
+            _repository.Update(task);
             if (this._log.IsInfoEnabled)
-                this._log.InfoFormat("删除团队任务#{0}", task.ID);
+                this._log.InfoFormat("废弃团队任务#{0}", task.ID);
         }
         Task ITaskService.GetTask(long id)
         {
@@ -116,6 +134,14 @@ namespace Cooper.Model.Teams
         IEnumerable<Task> ITaskService.GetIncompletedTasksByAccount(Team team, Account account)
         {
             return _repository.FindBy(team, account, false);
+        }
+        IEnumerable<Task> ITaskService.GetTasksByTag(Team team, string tag)
+        {
+            return _repository.FindByTag(team, tag);
+        }
+        IEnumerable<Task> ITaskService.GetIncompletedTasksByTag(Team team, string tag)
+        {
+            return _repository.FindByTag(team, false, tag);
         }
         IEnumerable<Task> ITaskService.GetTasksByProject(Project project)
         {
@@ -140,6 +166,10 @@ namespace Cooper.Model.Teams
             var team = _teamRepository.FindBy(member.TeamId);
             Assert.IsNotNull(team);
             return _repository.FindBy(team, member, false);
+        }
+        IEnumerable<Task> ITaskService.GetTrashedTasks(Team team)
+        {
+            return _repository.FindTrashedTasksBy(team);
         }
         #endregion
     }

@@ -6,14 +6,18 @@ using CodeSharp.Core.Utils;
 
 namespace Cooper.Model
 {
-    /// <summary>提供扩展功能的实体抽象类
+    /// <summary>提供支持基于字典的扩展功能的Component
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public abstract class ExtensiableEntityBase<T> : EntityBase<T>
+    public class ExtensionDictionary
     {
         private static readonly Serializer _serializer = new Serializer();
         private string _extensions { get; set; }
         private IDictionary<string, string> _dict;
+
+        public ExtensionDictionary()
+        {
+            this._extensions = string.Empty;
+        }
 
         /// <summary>根据键获取对应设置
         /// </summary>
@@ -38,21 +42,11 @@ namespace Cooper.Model
             }
         }
 
-        /// <summary>获取所有扩展信息字典
-        /// </summary>
-        /// <returns></returns>
-        public IDictionary<string, string> GetExtensions()
-        {
-            if (this._dict == null)
-                this._dict = this.Parse();
-            return this._dict;
-        }
-
         private IDictionary<string, string> Parse()
         {
-            return string.IsNullOrWhiteSpace(this._extensions)
-                ? new Dictionary<string, string>()
-                : _serializer.JsonDeserialize<IDictionary<string, string>>(this._extensions);
+            return (string.IsNullOrWhiteSpace(this._extensions)
+                    ? new Dictionary<string, string>() : _serializer.JsonDeserialize<IDictionary<string, string>>(this._extensions)
+                   ) ?? new Dictionary<string, string>();
         }
     }
 }
